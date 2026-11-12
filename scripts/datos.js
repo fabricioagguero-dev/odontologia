@@ -7,7 +7,7 @@
 module.exports = {
   sitio: {
     // TODO: reemplazar por el dominio definitivo (sin barra final)
-    url: 'https://www.jimenateruel.com.ar',
+    url: 'https://jimenaodontologia.nexorasaas.com',
     nombre: 'Jimena Teruel · Odontóloga',
     idioma: 'es-AR',
     locale: 'es_AR',
@@ -35,9 +35,9 @@ module.exports = {
       pais: 'AR',
     },
     // TODO: número de WhatsApp en formato internacional sin "+" ni espacios (ej: 5493484123456)
-    whatsapp: '5491100000000',
+    whatsapp: '5491159497352',
     // TODO: teléfono como se muestra en pantalla (ej: "+54 9 348 412-3456"). Si queda vacío se muestra "WhatsApp".
-    telefonoVisible: '',
+    telefonoVisible: '+54 9 11 5949-7352',
     email: '',
     // TODO: completar si tiene Instagram / Facebook / perfil de Google (se agregan al schema "sameAs")
     redes: {
