@@ -1,0 +1,16 @@
+{
+  "name": "jimena-teruel-odontologa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sitio institucional de Jimena Teruel, odontóloga especialista en Endodoncia en Belén de Escobar.",
+  "author": "Nexora",
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "node scripts/construir.js",
+    "dev": "node scripts/construir.js && node scripts/servidor-local.js",
+    "start": "node scripts/servidor-local.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

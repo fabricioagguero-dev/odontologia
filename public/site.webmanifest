@@ -1,0 +1,29 @@
+{
+  "name": "Jimena Teruel, Odontóloga en Escobar",
+  "short_name": "Jimena Teruel",
+  "description": "Consultorio odontológico en el centro de Escobar. Endodoncia (tratamiento de conducto), odontología general y ortodoncia. Pedí tu turno por WhatsApp.",
+  "lang": "es-AR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F8F4",
+  "theme_color": "#F7F8F4",
+  "icons": [
+    {
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/img/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/img/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
