@@ -8,33 +8,33 @@ module.exports = function odontologiaGeneral() {
   const faqs = D.faq.general;
 
   const servicios = [
-    ['consulta', 'consulta', 'Consulta y diagnóstico', 'Revisión completa de dientes y encías. Te explico qué encontré y armamos un plan con prioridades claras.'],
-    ['limpieza', 'prevencion', 'Limpieza y prevención', 'Eliminación de sarro y placa, pulido y consejos de cepillado para cuidar tus encías y prevenir caries.'],
-    ['arreglos', 'restauracion', 'Arreglos de caries', 'Restauraciones con resinas del color del diente, que se adhieren a la pieza y quedan naturales.'],
-    ['extracciones', 'extraccion', 'Extracciones', 'Cuando un diente no se puede conservar, lo extraemos de forma cuidada y te explico las opciones para reemplazarlo.'],
-    ['conducto', 'endodoncia', 'Tratamiento de conducto', 'Mi especialidad. Si el nervio está comprometido, hacemos la endodoncia en el mismo consultorio.', '/endodoncia/'],
-    ['urgencia', 'urgencias', 'Urgencias', 'Dolor, flemón o un diente roto. Escribinos y buscamos el turno más próximo disponible.', '/urgencias/'],
+    ['limpiezas', 'prevencion', 'Limpiezas', 'Eliminación de sarro y placa, pulido y consejos de cepillado. Es la base para tener encías sanas y prevenir caries.'],
+    ['operatoria', 'restauracion', 'Operatoria dental', 'Arreglos de caries y restauraciones con resinas del color del diente, que se adhieren a la pieza y quedan naturales.'],
+    ['protesis', 'protesis', 'Prótesis fija y removible', 'Coronas y puentes fijos o prótesis removibles para reemplazar dientes perdidos y recuperar la forma de masticar y la estética.'],
+    ['implantes', 'implantes', 'Implantología oral', 'Un implante es una raíz artificial de titanio sobre la que se coloca una corona fija. Es la forma más parecida a tener un diente propio.'],
+    ['postes', 'postes', 'Postes de fibra de vidrio', 'Refuerzan desde adentro los dientes con tratamiento de conducto que perdieron estructura, para que la reconstrucción o la corona quede firme.'],
+    ['blanqueamientos', 'blanqueamiento', 'Blanqueamientos', 'Aclarado del color de los dientes de forma segura, con productos profesionales y bajo control de la odontóloga.'],
   ];
 
   const cuerpo = `
 ${C.heroInterno({
   migasHTML: B.migas(id),
   h1: 'Odontología general en Escobar',
-  lead: 'Controles, limpieza, arreglos y extracciones con la misma odontóloga que conoce tu historia. Un consultorio tranquilo en el centro de Belén de Escobar.',
+  lead: 'Limpiezas, operatoria dental, prótesis, implantes, postes de fibra de vidrio y blanqueamientos, con la misma odontóloga que conoce tu historia. En el centro de Belén de Escobar.',
   iconoNombre: 'general',
   mensaje: 'Hola Jimena, quisiera pedir un turno para un control.',
 })}
 
 <section class="servicios" aria-labelledby="servicios-t">
   <div class="contenedor">
-    <h2 id="servicios-t" class="servicios__t">Qué hacemos en el consultorio</h2>
+    <h2 id="servicios-t" class="servicios__t">Tratamientos que hacemos en el consultorio</h2>
     <ul class="servicios__lista">${servicios
       .map(
-        ([ancla, ico, t, d, link]) => `<li class="servicio" id="${ancla}">
+        ([ancla, ico, t, d]) => `<li class="servicio" id="${ancla}">
       ${icono(ico, 'servicio__icono dibujar')}
       <h3>${t}</h3>
       <p>${d}</p>
-      ${link ? `<a class="enlace" href="${link}">Ver ${t.toLowerCase()}</a>` : ''}
+      <a class="enlace" href="${B.wa(`Hola Jimena, quisiera consultar por ${t.toLowerCase()}.`)}" target="_blank" rel="noopener">Consultar por ${t.toLowerCase()}</a>
     </li>`
       )
       .join('')}</ul>
@@ -76,7 +76,7 @@ ${B.ctaFinal({ mensaje: 'Hola Jimena, quisiera pedir un turno para un control.' 
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
       name: 'Odontología general',
-      itemListElement: servicios.slice(0, 4).map(([, , t, d]) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: t, description: d } })),
+      itemListElement: servicios.map(([, , t, d]) => ({ '@type': 'Offer', itemOffered: { '@type': 'Service', name: t, description: d } })),
     },
   };
 

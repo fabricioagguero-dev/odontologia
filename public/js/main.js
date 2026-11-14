@@ -166,7 +166,7 @@
       ['Marcá uno o más síntomas', 'Según lo que elijas, te decimos qué tan pronto conviene que te vea.'],
       ['Puede ser sensibilidad', 'Una puntada breve que se va enseguida suele tener una solución simple. Igual conviene revisarlo en tu próximo control.'],
       ['Conviene una evaluación pronto', 'Algunas de estas señales pueden indicar que el nervio está inflamado. Cuanto antes se revise, más simple suele ser el tratamiento.'],
-      ['Pedí un turno lo antes posible', 'Estas señales son compatibles con una infección del nervio. Escribinos y buscamos el turno más próximo. Si la hinchazón avanza hacia el ojo o el cuello, o tenés fiebre, andá a una guardia.'],
+      ['Pedí un turno lo antes posible', 'Estas señales pueden indicar que la pulpa del diente (el nervio) está comprometida. Escribinos y buscamos el turno más próximo. Si la hinchazón avanza hacia el ojo o el cuello, o tenés fiebre, andá a una guardia.'],
     ];
 
     form.addEventListener('submit', function (e) { e.preventDefault(); });
@@ -237,6 +237,32 @@
       if (nombre.value.trim()) { nombre.removeAttribute('aria-invalid'); error.hidden = true; }
     });
   }
+
+  /* ---------- opiniones: carrusel con flechas ---------- */
+  $$('.opiniones').forEach(function (sec) {
+    var lista = $('[data-opiniones]', sec);
+    if (!lista) return;
+    var paso = function () {
+      var c = lista.querySelector('.op');
+      return c ? c.getBoundingClientRect().width + 24 : 300;
+    };
+    var activarSnap = function () { lista.classList.add('snap'); };
+    ['pointerdown', 'touchstart', 'wheel', 'focusin'].forEach(function (ev) {
+      lista.addEventListener(ev, activarSnap, { passive: true, once: true });
+    });
+    var mover = function (dir) { activarSnap(); lista.scrollBy({ left: dir * paso(), behavior: reducido ? 'auto' : 'smooth' }); };
+    var prev = $('[data-op-prev]', sec), next = $('[data-op-next]', sec);
+    $$('[data-op-mas]', sec).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var card = b.closest('.op');
+        var abierto = card.classList.toggle('is-abierta');
+        b.setAttribute('aria-expanded', String(abierto));
+        b.textContent = abierto ? 'Leer menos' : 'Leer más';
+      });
+    });
+    if (prev) prev.addEventListener('click', function () { mover(-1); });
+    if (next) next.addEventListener('click', function () { mover(1); });
+  });
 
   /* ---------- índice lateral: resalta la sección visible ---------- */
   var enlacesIndice = $$('.indice a');

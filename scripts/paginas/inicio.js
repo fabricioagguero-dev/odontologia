@@ -11,7 +11,7 @@ function palabras(txt) {
     .join(' ');
 }
 
-module.exports = function inicio() {
+module.exports = function inicio({ foto = false } = {}) {
   const faqs = [D.faq.endodoncia[0], D.faq.endodoncia[1], D.faq.endodoncia[3], D.faq.general[2], D.faq.consultorio[1]];
 
   const cuerpo = `
@@ -19,7 +19,7 @@ module.exports = function inicio() {
   <div class="contenedor hero__in">
     <div class="hero__texto">
       <h1 id="hero-t" class="hero__titulo">${palabras('Odontóloga en Escobar, especialista en endodoncia.')}</h1>
-      <p class="hero__lead">Tratamientos de conducto, odontología general y ortodoncia en un consultorio tranquilo del centro de Escobar. En cada consulta te atiende la misma profesional, de principio a fin.</p>
+      <p class="hero__lead">Endodoncia, prótesis, implantes, blanqueamientos y ortodoncia en un consultorio tranquilo del centro de Escobar. En cada consulta te atiende la misma profesional, de principio a fin.</p>
       <div class="acciones hero__acciones">
         <a class="btn btn--wa btn--grande" href="${wa()}" target="_blank" rel="noopener">${UI.whatsapp}Pedir turno por WhatsApp</a>
         <a class="btn btn--linea btn--grande" href="#tratamientos">Ver tratamientos</a>
@@ -31,7 +31,7 @@ module.exports = function inicio() {
     </div>
     <div class="hero__arte" data-parallax aria-hidden="true">
       <div class="hero__disco" data-capa="0.3"></div>
-      <div class="hero__emblema" data-capa="1">${emblema({ prefijo: 'hero', clase: 'emblema--hero', animado: true })}</div>
+      <div class="hero__emblema" data-capa="1">${emblema({ animado: true, prioridad: true })}</div>
       <div class="hero__petalos" data-capa="1.8">${petalo('ps1')}${petalo('ps2')}${petalo('ps3')}${petalo('ps4')}</div>
     </div>
   </div>
@@ -53,16 +53,18 @@ ${C.chequeo()}
 
 <section class="sobre" aria-labelledby="sobre-t">
   <div class="contenedor sobre__in">
-    ${C.retrato()}
+    ${C.retrato({ foto })}
     <div class="sobre__txt">
       <h2 id="sobre-t">Jimena Teruel, tu odontóloga en Escobar</h2>
-      <p class="sobre__lead">Soy odontóloga y me especialicé en Endodoncia, la rama de la odontología que trata el interior del diente: el nervio y los conductos.</p>
-      <p>Además atiendo odontología general, así que la mayoría de tus tratamientos los podés resolver en un solo lugar. Trabajo sola en el consultorio: en cada turno te atiendo yo, sé qué hicimos la vez anterior y qué sigue.</p>
+      <p class="sobre__lead">Soy odontóloga recibida en la UBA y me especialicé en Endodoncia, también en la UBA, la rama de la odontología que trata el interior del diente: el nervio y los conductos.</p>
+      <p>Brindo atención integral y personalizada, con un enfoque en tratamientos seguros, eficaces y de alta calidad. Trabajo sola en el consultorio: en cada turno te atiendo yo, sé qué hicimos la vez anterior y qué sigue.</p>
       <p>Para ortodoncia, una colega ortodoncista viene al consultorio a atender a mis pacientes. Así coordinamos entre las dos y vos no tenés que ir de un lado a otro.</p>
       <a class="enlace" href="/sobre-mi/">Conocé más sobre mí y el consultorio</a>
     </div>
   </div>
 </section>
+
+${C.opiniones()}
 
 ${C.primeraConsulta()}
 
@@ -83,5 +85,5 @@ ${B.ctaFinal()}
 `;
 
   const schema = [...B.nodosBase(), B.paginaSchema('inicio'), B.migasSchema('inicio'), B.faqSchema('inicio', faqs)];
-  return B.documento('inicio', { cuerpo, schema, claseBody: 'es-inicio' });
+  return B.documento('inicio', { cuerpo, schema, claseBody: 'es-inicio', precargarHero: true });
 };

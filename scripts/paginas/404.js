@@ -5,7 +5,7 @@ module.exports = function noEncontrada() {
   const cuerpo = `
 <section class="error404">
   <div class="contenedor error404__in">
-    ${emblema({ prefijo: 'nf', clase: 'error404__emblema' })}
+    ${emblema({ grande: true, clase: 'error404__emblema' })}
     <h1>No encontramos esta página</h1>
     <p>Puede que la dirección esté mal escrita o que la página haya cambiado de lugar. Desde acá podés seguir:</p>
     <ul class="error404__links">

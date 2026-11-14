@@ -104,7 +104,7 @@ ${B.ctaFinal({
     name: 'Endodoncia (tratamiento de conducto)',
     alternateName: ['Tratamiento de conducto', 'Tratamiento endodóntico', 'Retratamiento de conducto'],
     url: abs('/endodoncia/'),
-    description: 'Tratamiento que elimina la pulpa inflamada o infectada, limpia, desinfecta y sella los conductos radiculares para conservar el diente natural.',
+    description: 'Tratamiento que retira la pulpa dañada, limpia, desinfecta y sella los conductos radiculares para conservar el diente natural.',
     procedureType: 'https://schema.org/TherapeuticProcedure',
     bodyLocation: 'Pulpa dental y conductos radiculares',
     preparation: 'Evaluación clínica y radiográfica del diente.',

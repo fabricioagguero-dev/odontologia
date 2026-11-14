@@ -17,8 +17,18 @@ const PUBLIC = path.join(RAIZ, 'public');
 const B = require('./plantillas/base');
 const { D, S, N, abs } = B;
 
-// Cambiá a true cuando subas /public/img/jimena.webp
+// Fotos: se detectan solas.
+//  · /public/img/jimena.webp            → reemplaza el logo en el retrato
+//  · /public/img/consultorio/*.webp|jpg → galería "Así es el consultorio" en Sobre mí
 const FOTO = fs.existsSync(path.join(PUBLIC, 'img', 'jimena.webp'));
+const DIR_CONS = path.join(PUBLIC, 'img', 'consultorio');
+const FOTOS_CONSULTORIO = fs.existsSync(DIR_CONS)
+  ? fs
+      .readdirSync(DIR_CONS)
+      .filter((f) => /\.(webp|jpe?g|png|avif)$/i.test(f))
+      .sort()
+      .map((f) => ({ src: `/img/consultorio/${f}`, alt: `Consultorio odontológico de Jimena Teruel en Escobar` }))
+  : [];
 
 // ---------- versionado de assets ----------
 const hash = (f) => crypto.createHash('sha1').update(fs.readFileSync(path.join(PUBLIC, f))).digest('hex').slice(0, 8);
@@ -56,7 +66,7 @@ const generadas = [];
 for (const [id, fn] of Object.entries(PAGINAS)) {
   const ruta = D.paginas[id].ruta;
   const rel = ruta === '/' ? 'index.html' : path.join(ruta.replace(/^\/|\/$/g, ''), 'index.html');
-  generadas.push(escribir(rel, min(fn({ foto: FOTO }))));
+  generadas.push(escribir(rel, min(fn({ foto: FOTO, fotosConsultorio: FOTOS_CONSULTORIO }))));
 }
 generadas.push(escribir('404.html', min(require('./paginas/404')())));
 
@@ -127,7 +137,9 @@ generadas.push(
 
 > ${N.titulo} ${N.profesional}, ${N.especialidad.toLowerCase()} (${N.matricula}). Consultorio odontológico en ${N.direccion.calle}, ${N.direccion.detalle.toLowerCase()}, ${N.direccion.localidad}, provincia de ${N.direccion.provincia}, Argentina. Turnos por WhatsApp.
 
-Tratamientos: endodoncia (tratamiento de conducto y retratamiento), odontología general (controles, limpieza, arreglos de caries, extracciones), ortodoncia con ortodoncista que atiende en el consultorio y urgencias odontológicas.
+Formación: odontóloga de la ${N.formacion.universidad} (${N.formacion.universidadCorta}), especialista en Endodoncia (${N.formacion.universidadCorta}${N.formacion.anioEspecialidad ? ', ' + N.formacion.anioEspecialidad : ''}).
+Tratamientos: endodoncia (tratamiento de conducto y retratamiento), prótesis fija y removible, implantología oral, limpiezas, operatoria dental, postes de fibra de vidrio, blanqueamientos, ortodoncia con ortodoncista que atiende en el consultorio y urgencias odontológicas.
+${N.redes.instagram ? 'Instagram: ' + N.redes.instagram : ''}
 Zonas: ${N.zonas.join(', ')}.
 
 ## Páginas

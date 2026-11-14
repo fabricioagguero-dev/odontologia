@@ -55,7 +55,7 @@ function nodosBase() {
     name: N.nombre,
     alternateName: `${N.titulo} ${N.profesional}`,
     description:
-      'Consultorio odontológico en Belén de Escobar. Endodoncia (tratamiento de conducto), odontología general y ortodoncia.',
+      'Consultorio odontológico en Belén de Escobar. Endodoncia, prótesis fija y removible, implantes, limpiezas, operatoria dental, postes de fibra de vidrio, blanqueamientos y ortodoncia.',
     url: abs('/'),
     logo: { '@type': 'ImageObject', '@id': ID.logo, url: abs('/img/logo-512.png'), width: 512, height: 512 },
     image: abs('/og-image.png'),
@@ -67,7 +67,8 @@ function nodosBase() {
       postalCode: N.direccion.cp,
       addressCountry: N.direccion.pais,
     },
-    hasMap: mapsLink,
+    hasMap: N.redes.googleMaps || mapsLink,
+    ...(N.geo ? { geo: { '@type': 'GeoCoordinates', latitude: N.geo.lat, longitude: N.geo.lng } } : {}),
     areaServed: N.zonas.map((z) => ({ '@type': 'City', name: z })),
     medicalSpecialty: 'https://schema.org/Dentistry',
     isAcceptingNewPatients: true,
@@ -80,10 +81,12 @@ function nodosBase() {
       itemListElement: [
         ['Endodoncia (tratamiento de conducto)', '/endodoncia/'],
         ['Retratamiento de conducto', '/endodoncia/#retratamiento'],
-        ['Odontología general', '/odontologia-general/'],
-        ['Limpieza dental', '/odontologia-general/#limpieza'],
-        ['Arreglos de caries (restauraciones estéticas)', '/odontologia-general/#arreglos'],
-        ['Extracciones', '/odontologia-general/#extracciones'],
+        ['Prótesis fija y removible', '/odontologia-general/#protesis'],
+        ['Limpiezas dentales', '/odontologia-general/#limpiezas'],
+        ['Implantología oral', '/odontologia-general/#implantes'],
+        ['Operatoria dental', '/odontologia-general/#operatoria'],
+        ['Postes de fibra de vidrio', '/odontologia-general/#postes'],
+        ['Blanqueamientos dentales', '/odontologia-general/#blanqueamientos'],
         ['Ortodoncia', '/ortodoncia/'],
         ['Urgencias odontológicas', '/urgencias/'],
       ].map(([name, ruta]) => ({
@@ -110,13 +113,23 @@ function nodosBase() {
     name: N.profesional,
     jobTitle: `${N.titulo}, ${N.especialidad}`,
     honorificPrefix: 'Od.',
-    knowsAbout: ['Endodoncia', 'Tratamiento de conducto', 'Retratamiento endodóntico', 'Odontología general'],
-    hasCredential: {
-      '@type': 'EducationalOccupationalCredential',
-      credentialCategory: 'Matrícula profesional',
-      name: `Matrícula Provincial ${N.matriculaNumero}`,
-      recognizedBy: { '@type': 'Organization', name: 'Provincia de Buenos Aires' },
-    },
+    knowsAbout: ['Endodoncia', 'Tratamiento de conducto', 'Retratamiento endodóntico', 'Prótesis dental', 'Implantología oral', 'Blanqueamiento dental', 'Odontología general'],
+    alumniOf: { '@type': 'CollegeOrUniversity', name: N.formacion.universidad, sameAs: 'https://www.uba.ar' },
+    hasCredential: [
+      {
+        '@type': 'EducationalOccupationalCredential',
+        credentialCategory: 'Matrícula profesional',
+        name: `Matrícula Provincial ${N.matriculaNumero}`,
+        recognizedBy: { '@type': 'Organization', name: 'Provincia de Buenos Aires' },
+      },
+      {
+        '@type': 'EducationalOccupationalCredential',
+        credentialCategory: 'Especialización',
+        name: 'Especialista en Endodoncia',
+        recognizedBy: { '@type': 'CollegeOrUniversity', name: N.formacion.universidad },
+        ...(N.formacion.anioEspecialidad ? { dateCreated: N.formacion.anioEspecialidad } : {}),
+      },
+    ],
     worksFor: { '@id': ID.consultorio },
     workLocation: { '@id': ID.consultorio },
     url: abs('/sobre-mi/'),
@@ -178,6 +191,10 @@ function jsonld(nodos) {
 
 // ---------- <head> ----------
 function head(id, { schema = [], indexar = true, precargarHero = false } = {}) {
+  const precarga = precargarHero
+    ? `<link rel="preload" href="/img/logo/emblema-estructura.webp" as="image" type="image/webp" fetchpriority="high">
+<link rel="preload" href="/img/logo/emblema-flor.webp" as="image" type="image/webp">`
+    : '';
   const p = D.paginas[id] || { ruta: '/404.html', titulo: 'Página no encontrada | Jimena Teruel', descripcion: '', keywords: [] };
   const url = abs(p.ruta);
   const og = abs('/og-image.png');
@@ -212,12 +229,13 @@ ${indexar ? `<link rel="canonical" href="${url}">
 <meta name="twitter:image" content="${og}">
 <meta name="theme-color" content="${S.colorTema}">
 <meta name="format-detection" content="telephone=no">
-<link rel="icon" href="/favicon.ico" sizes="32x32">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preload" href="/fonts/marcellus.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/figtree-var.woff2" as="font" type="font/woff2" crossorigin>
+${precarga}
 <link rel="stylesheet" href="/css/main.css?v=${assets.css}">
 <script src="/js/main.js?v=${assets.js}" defer></script>
 ${schema.length ? jsonld(schema) : ''}
@@ -237,8 +255,8 @@ function cabecera(activa) {
 <header class="cabecera" data-cabecera>
   <div class="cabecera__in">
     <a class="marca" href="/">
-      ${emblema({ prefijo: 'hd', clase: 'marca__emblema' })}
-      <span class="marca__txt"><span class="marca__nombre">Jimena Teruel</span><span class="marca__sub">Odontóloga, M.P. ${N.matriculaNumero}</span></span>
+      ${emblema({ clase: 'marca__emblema' })}
+      <span class="marca__txt"><span class="marca__pre">Odontóloga</span><span class="marca__nombre">Jimena Teruel</span></span>
     </a>
     <nav class="nav" aria-label="Principal"><ul>${links}</ul></nav>
     <a class="btn btn--primario btn--chico cabecera__cta" href="/contacto/"${activa === 'contacto' ? ' aria-current="page"' : ''}>Pedir turno</a>
@@ -254,6 +272,7 @@ function cabecera(activa) {
     <li><a href="/contacto/"${activa === 'contacto' ? ' aria-current="page"' : ''}>Contacto</a></li>
   </ul></nav>
   <a class="btn btn--wa" href="${wa()}" target="_blank" rel="noopener">${UI.whatsapp}Pedir turno por WhatsApp</a>
+  ${N.redes.instagram ? `<a class="menu-movil__ig" href="${N.redes.instagram}" target="_blank" rel="noopener">${UI.instagram}${esc(N.instagramUsuario)}</a>` : ''}
   <p class="menu-movil__dir">${UI.pin}${esc(N.direccion.calle)}, ${esc(N.direccion.detalle.toLowerCase())}. ${esc(N.direccion.localidad)}</p>
 </div>
 `;
@@ -273,9 +292,10 @@ function pie() {
   return `<footer class="pie">
   <div class="contenedor pie__in">
     <div class="pie__marca">
-      ${emblema({ prefijo: 'ft', clase: 'pie__emblema' })}
+      ${emblema({ clase: 'pie__emblema' })}
+      <p class="pie__pre">Odontóloga</p>
       <p class="pie__nombre">Jimena Teruel</p>
-      <p>Odontóloga especialista en Endodoncia<br>Matrícula Provincial ${N.matriculaNumero}</p>
+      <p>Especialista en Endodoncia (UBA)<br>Matrícula Provincial ${N.matriculaNumero}</p>
     </div>
     <nav class="pie__col" aria-label="Tratamientos">
       <p class="pie__tit">Tratamientos</p>
@@ -300,7 +320,8 @@ function pie() {
         ${esc(N.direccion.calle)}<br>${esc(N.direccion.detalle)}<br>${esc(N.direccion.localidad)}, ${esc(N.direccion.provincia)}
       </address>
       <p><a href="${mapsComoLlegar}" target="_blank" rel="noopener">Cómo llegar</a></p>
-      <p><a href="${wa()}" target="_blank" rel="noopener">${esc(telefonoTxt)}</a></p>
+      <p><a class="pie__wa" href="${wa()}" target="_blank" rel="noopener">${UI.whatsapp}${esc(telefonoTxt)}</a></p>
+      ${N.redes.instagram ? `<p><a class="pie__ig" href="${N.redes.instagram}" target="_blank" rel="noopener">${UI.instagram}${esc(N.instagramUsuario)}</a></p>` : ''}
     </div>
   </div>
   <div class="contenedor pie__base">
@@ -338,8 +359,8 @@ function faqHTML(lista, { abierta = -1 } = {}) {
 }
 
 // ---------- documento completo ----------
-function documento(id, { cuerpo, schema = [], indexar = true, claseBody = '' }) {
-  return `${head(id, { schema, indexar })}
+function documento(id, { cuerpo, schema = [], indexar = true, claseBody = '', precargarHero = false }) {
+  return `${head(id, { schema, indexar, precargarHero })}
 <body class="${claseBody}">
 ${cabecera(id)}
 <main id="contenido">

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jimenaodontologia.nexorasaas.com/sitemap.xml
+Sitemap: https://www.odontologajimenateruel.com.ar/sitemap.xml

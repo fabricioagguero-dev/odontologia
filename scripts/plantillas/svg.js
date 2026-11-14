@@ -3,44 +3,25 @@
  * El emblema está redibujado a partir del logo (diente + magnolia + arco).
  */
 
-// Emblema. prefijo: evita ids de gradientes duplicados en la misma página.
-function emblema({ prefijo = 'e', clase = '', titulo = '', animado = false } = {}) {
-  const pl = animado ? ' pathLength="1"' : '';
-  const a11y = titulo
-    ? `role="img" aria-labelledby="${prefijo}-t"><title id="${prefijo}-t">${titulo}</title`
-    : 'aria-hidden="true" focusable="false"';
-  return `<svg class="emblema ${clase}" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" ${a11y}>
-  <defs>
-    <linearGradient id="${prefijo}-pf" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#D99C82"/><stop offset="1" stop-color="#F4D9C8"/></linearGradient>
-    <linearGradient id="${prefijo}-pb" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#E7B59C"/><stop offset="1" stop-color="#F8E6DA"/></linearGradient>
-    <linearGradient id="${prefijo}-ar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D9B79F"/><stop offset=".35" stop-color="#9AA588"/><stop offset="1" stop-color="#7E8B6C"/></linearGradient>
-  </defs>
-  <path class="em-arco" d="M132 18 A88 88 0 1 0 186 120" fill="none" stroke="url(#${prefijo}-ar)" stroke-width="2.4" stroke-linecap="round"${pl}/>
-  <g class="em-diente" fill="none" stroke="#7E8B6C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M117 46C110 41 104 44 99 49C93 42 84 38 73 41C56 45 48 62 51 84C54 104 60 122 64 146C66 160 76 163 80 150C84 136 86 122 96 118"${pl}/>
-    <path d="M110 120C116 124 118 138 121 150C124 162 133 160 135 147C138 128 143 110 147 90C149 80 148 72 144 66"${pl}/>
-  </g>
-  <path class="em-tallo" d="M103 150C101 128 104 104 114 86C119 77 124 70 128 64" fill="none" stroke="#7E8B6C" stroke-width="3" stroke-linecap="round"${pl}/>
-  <g class="em-hojas">
-    <path class="em-hoja h1" d="M104 116C92 112 84 104 82 94C94 95 102 103 104 116Z" fill="#8F9C7C"/>
-    <path class="em-hoja h2" d="M110 98C120 92 132 92 140 98C130 106 118 106 110 98Z" fill="#7E8B6C"/>
-    <path class="em-hoja h3" d="M107 132C118 128 128 130 134 136C124 142 114 140 107 132Z" fill="#A3AE91"/>
-  </g>
-  <g transform="translate(129 63) rotate(16)">
-    <g class="em-flor">
-      <path class="em-petalo p1" d="M0 0C-17-6-27-22-23-42C-8-38 3-20 0 0Z" fill="url(#${prefijo}-pb)"/>
-      <path class="em-petalo p2" d="M0 0C17-6 27-22 23-42C8-38-3-20 0 0Z" fill="url(#${prefijo}-pb)"/>
-      <path class="em-petalo p3" d="M0 0C-22 2-38-8-44-24C-26-28-9-16 0 0Z" fill="url(#${prefijo}-pf)"/>
-      <path class="em-petalo p4" d="M0 0C22 2 38-8 44-24C26-28 9-16 0 0Z" fill="url(#${prefijo}-pf)"/>
-      <path class="em-petalo p5" d="M0 0C-14-12-15-34 0-50C15-34 14-12 0 0Z" fill="url(#${prefijo}-pf)"/>
-    </g>
-  </g>
-</svg>`;
+// Emblema: el logo original de Jimena (diente + magnolia + arco).
+// Chico (cabecera/pie): una sola imagen liviana.
+// Grande o animado: dos capas (estructura + flor) para poder animar la flor por separado.
+function emblema({ clase = '', titulo = '', animado = false, grande = false, prioridad = false } = {}) {
+  const alt = titulo || '';
+  if (!animado && !grande) {
+    return `<img class="emblema ${clase}" src="/img/logo/emblema-128.webp" width="128" height="129" alt="${alt}" decoding="async">`;
+  }
+  const carga = prioridad ? ' fetchpriority="high"' : ' loading="lazy"';
+  const a11y = titulo ? ` role="img" aria-label="${titulo}"` : ' aria-hidden="true"';
+  return `<span class="emblema-capas ${animado ? 'emblema--hero' : ''} ${clase}"${a11y}>
+    <img class="ec-estructura" src="/img/logo/emblema-estructura.webp" width="840" height="846" alt="" decoding="async"${carga}>
+    <img class="ec-flor" src="/img/logo/emblema-flor.webp" width="840" height="846" alt="" decoding="async"${carga}>
+  </span>`;
 }
 
 // Pétalo suelto (para la animación de pétalos flotando en el hero)
 const petalo = (clase) =>
-  `<svg class="petalo-suelto ${clase}" viewBox="-12 -26 24 28" aria-hidden="true" focusable="false"><path d="M0 0C-9-6-10-18 0-26C10-18 9-6 0 0Z" fill="#EBC3AD"/></svg>`;
+  `<svg class="petalo-suelto ${clase}" viewBox="-12 -26 24 28" aria-hidden="true" focusable="false"><path d="M0 0C-9-6-10-18 0-26C10-18 9-6 0 0Z" fill="#E6C6AF"/></svg>`;
 
 // Íconos de línea 48x48 (stroke = currentColor). pathLength para animar el trazo.
 const ICONOS = {
@@ -51,6 +32,10 @@ const ICONOS = {
   prevencion: `<path d="M8 40L30 18M30 18L34 14C36 12 39 12 41 14C43 16 43 19 41 21L37 25C35 27 32 27 30 25L23 18" pathLength="1"/><path d="M33 9V13M37 7V12M41 6V10M45 8V12" pathLength="1" class="acento"/>`,
   restauracion: `<path d="M16 6C11 6 8 10 8 16C8 24 11 30 12 38C12.5 42 15 43 16.5 40C18 36 19 30 24 30C29 30 30 36 31.5 40C33 43 35.5 42 36 38C37 30 40 24 40 16C40 10 37 6 32 6C29 6 27 8 24 8C21 8 19 6 16 6Z" pathLength="1"/><path d="M18 14C20 18 28 18 30 14" pathLength="1" class="acento"/>`,
   extraccion: `<path d="M16 14C12 14 10 17 10 21C10 27 12 31 13 36C13.5 39 15.5 40 16.5 37.5C17.5 34 19 31 22 31C25 31 26.5 34 27.5 37.5C28.5 40 30.5 39 31 36C32 31 34 27 34 21C34 17 32 14 28 14C26 14 24.5 15.5 22 15.5C19.5 15.5 18 14 16 14Z" pathLength="1"/><path d="M38 4V12M34 8L38 4L42 8" pathLength="1" class="acento"/>`,
+  implantes: `<path d="M14 5C10 5 9 8 9 11C9 15 11 18 13 19H35C37 18 39 15 39 11C39 8 38 5 34 5C31 5 29 7 24 7C19 7 17 5 14 5Z" pathLength="1"/><path d="M19 19V24H29V19M18 24H30L28 41C27 45 21 45 20 41ZM18.6 29H29.4M19.2 34H28.8M19.8 39H28.2" pathLength="1" class="acento"/>`,
+  protesis: `<path d="M6 22V14C6 10 8 8 11 8C14 8 16 10 16 14V22M18 22V13C18 9 20 7 24 7C28 7 30 9 30 13V22M32 22V14C32 10 34 8 37 8C40 8 42 10 42 14V22" pathLength="1"/><path d="M4 22H44V28C44 32 41 35 37 35H11C7 35 4 32 4 28Z" pathLength="1" class="acento"/>`,
+  postes: `<path d="M16 6C11 6 8 10 8 16C8 24 11 30 12 38C12.5 42 15 43 16.5 40C18 36 19 30 24 30C29 30 30 36 31.5 40C33 43 35.5 42 36 38C37 30 40 24 40 16C40 10 37 6 32 6C29 6 27 8 24 8C21 8 19 6 16 6Z" pathLength="1"/><path d="M20 12H28M24 12V34" pathLength="1" class="acento"/>`,
+  blanqueamiento: `<path d="M14 10C9 10 6 14 6 20C6 28 9 33 10 40C10.5 44 13 45 14.5 42C16 38 17 34 22 34C27 34 28 38 29.5 42C31 45 33.5 44 34 40C35 33 38 28 38 20C38 14 35 10 30 10C27 10 25 12 22 12C19 12 17 10 14 10Z" pathLength="1"/><path d="M41 3L42.4 7.1L46.5 8.5L42.4 9.9L41 14L39.6 9.9L35.5 8.5L39.6 7.1ZM13 18C14 16 16 15 18 15" pathLength="1" class="acento"/>`,
   consulta: `<circle cx="32" cy="14" r="8" pathLength="1"/><path d="M26 20L8 42" pathLength="1"/><path d="M29 11C30 10 32 10 34 11" pathLength="1" class="acento"/>`,
 };
 
@@ -66,6 +51,10 @@ const UI = {
   persona: `<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>`,
   dos: `<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="8.5" cy="8" r="3.2"/><circle cx="16.5" cy="9" r="2.6"/><path d="M2.5 20c1-3.4 3.3-5.2 6-5.2s5 1.8 6 5.2M15 14.6c2.6-.3 5 1.2 6.2 4.4"/></svg>`,
   escudo: `<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l7 3v5.5c0 4.5-3 8-7 9.5-4-1.5-7-5-7-9.5V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg>`,
+  instagram: `<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".6" fill="currentColor"/></svg>`,
+  estrella: `<svg class="ui-ico estrella" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>`,
+  google: `<svg class="ui-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg>`,
+  flecha: `<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>`,
   menu: `<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 8h16M4 16h16"/></svg>`,
   cerrar: `<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>`,
   mas: `<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>`,

@@ -118,7 +118,7 @@ function ubicacion({ titulo = 'Consultorio en el centro de Escobar', nivel = 'h2
         <span>${esc(N.direccion.localidad)}, ${esc(N.direccion.provincia)}</span>
       </address>
       <ul class="ubicacion__datos">
-        <li>${UI.reloj}<span>${N.horarios.length ? 'Lunes a viernes, con turno' : 'Atención con turno previo'}</span></li>
+        <li>${UI.reloj}<span>${N.horariosTexto || 'Atención con turno previo'}</span></li>
         <li>${UI.whatsapp}<span>Turnos por WhatsApp</span></li>
       </ul>
       <p class="ubicacion__zonas">Atendemos pacientes de ${N.zonas.slice(0, -2).join(', ')} y alrededores.</p>
@@ -132,45 +132,63 @@ function ubicacion({ titulo = 'Consultorio en el centro de Escobar', nivel = 'h2
 </section>`;
 }
 
-// ---------- Tratamientos (lista editorial) ----------
+// ---------- Tratamientos (lista editorial, los que hace Jimena) ----------
 const TRATAMIENTOS = [
   {
-    id: 'endodoncia',
-    ruta: '/endodoncia/',
-    t: 'Endodoncia',
-    d: 'Tratamiento de conducto para eliminar la infección del nervio y conservar tu diente natural. También retratamientos de conductos hechos antes.',
-    link: 'Cómo es una endodoncia',
-    destacado: 'Especialidad',
+    id: 'endodoncia', icono: 'endodoncia', ruta: '/endodoncia/', t: 'Endodoncia',
+    d: 'Tratamiento de conducto para conservar tu diente natural. También retratamientos de conductos hechos antes.',
+    link: 'Cómo es una endodoncia', destacado: 'Especialidad',
   },
   {
-    id: 'general',
-    ruta: '/odontologia-general/',
-    t: 'Odontología general',
-    d: 'Controles, limpieza, arreglos de caries del color del diente y extracciones. Lo de todos los días, bien hecho.',
-    link: 'Ver odontología general',
+    id: 'protesis', icono: 'protesis', ruta: '/odontologia-general/#protesis', t: 'Prótesis fija y removible',
+    d: 'Coronas, puentes y prótesis removibles para reemplazar dientes perdidos y volver a masticar y sonreír con comodidad.',
+    link: 'Más sobre prótesis',
   },
   {
-    id: 'ortodoncia',
-    ruta: '/ortodoncia/',
-    t: 'Ortodoncia',
+    id: 'ortodoncia', icono: 'ortodoncia', ruta: '/ortodoncia/', t: 'Ortodoncia',
     d: 'Una ortodoncista atiende en el consultorio: evaluación, aparatos y controles sin ir a otro lugar.',
-    link: 'Ver ortodoncia',
+    link: 'Más sobre ortodoncia',
   },
   {
-    id: 'urgencias',
-    ruta: '/urgencias/',
-    t: 'Urgencias',
-    d: 'Dolor de muela, flemón o un diente roto. Escribinos y buscamos el turno más próximo disponible.',
-    link: 'Qué hacer en una urgencia',
+    id: 'limpiezas', icono: 'prevencion', ruta: '/odontologia-general/#limpiezas', t: 'Limpiezas',
+    d: 'Eliminación de sarro y placa y pulido para cuidar tus encías y prevenir caries.',
+    link: 'Más sobre limpiezas',
+  },
+  {
+    id: 'implantes', icono: 'implantes', ruta: '/odontologia-general/#implantes', t: 'Implantología oral',
+    d: 'Implantes para reemplazar dientes perdidos con una raíz de titanio y una corona fija.',
+    link: 'Más sobre implantes',
+  },
+  {
+    id: 'operatoria', icono: 'restauracion', ruta: '/odontologia-general/#operatoria', t: 'Operatoria dental',
+    d: 'Arreglos de caries y restauraciones con resinas del color del diente, que quedan naturales.',
+    link: 'Más sobre operatoria',
+  },
+  {
+    id: 'postes', icono: 'postes', ruta: '/odontologia-general/#postes', t: 'Postes de fibra de vidrio',
+    d: 'Refuerzan los dientes con tratamiento de conducto que perdieron estructura, con un material estético y resistente.',
+    link: 'Más sobre postes',
+  },
+  {
+    id: 'blanqueamientos', icono: 'blanqueamiento', ruta: '/odontologia-general/#blanqueamientos', t: 'Blanqueamientos',
+    d: 'Aclarado del color de los dientes de forma segura, indicado y controlado por la profesional.',
+    link: 'Más sobre blanqueamientos',
   },
 ];
 
+// Páginas para el bloque "También te puede interesar"
+const PAGINAS_REL = {
+  endodoncia: { icono: 'endodoncia', ruta: '/endodoncia/', t: 'Endodoncia', d: 'Tratamiento de conducto con especialista para conservar tu diente natural.' },
+  general: { icono: 'general', ruta: '/odontologia-general/', t: 'Odontología general', d: 'Limpiezas, operatoria, prótesis, implantes, postes y blanqueamientos.' },
+  ortodoncia: { icono: 'ortodoncia', ruta: '/ortodoncia/', t: 'Ortodoncia', d: 'Ortodoncista en el mismo consultorio: evaluación, aparatos y controles.' },
+  urgencias: { icono: 'urgencias', ruta: '/urgencias/', t: 'Urgencias', d: 'Dolor de muela, flemón o un diente roto: qué hacer y cómo pedir turno.' },
+};
+
 function tratamientos() {
-  const ico = { endodoncia: 'endodoncia', general: 'general', ortodoncia: 'ortodoncia', urgencias: 'urgencias' };
   const filas = TRATAMIENTOS.map(
     (x) => `<li class="trat${x.destacado ? ' trat--destacado' : ''}">
     <a class="trat__link" href="${x.ruta}">
-      ${icono(ico[x.id], 'trat__icono dibujar')}
+      ${icono(x.icono, 'trat__icono dibujar')}
       <span class="trat__cuerpo">
         <span class="trat__tit">${x.t}${x.destacado ? `<span class="sello">${x.destacado}</span>` : ''}</span>
         <span class="trat__d">${x.d}</span>
@@ -183,8 +201,9 @@ function tratamientos() {
   <div class="contenedor tratamientos__in">
     <div class="tratamientos__cab">
       <h2 id="tratamientos-t">Tratamientos en el consultorio</h2>
-      <p>Desde un control de rutina hasta salvar una muela que parecía perdida. Todo en el mismo lugar y con la misma profesional.</p>
+      <p>Desde una limpieza hasta salvar una muela que parecía perdida o reemplazar un diente con un implante. Todo en el mismo lugar y con la misma profesional.</p>
       <a class="btn btn--linea" href="/contacto/">Consultar por un tratamiento</a>
+      <p class="tratamientos__urg">¿Tenés dolor ahora? <a class="enlace" href="/urgencias/">Mirá qué hacer en una urgencia</a></p>
     </div>
     <ul class="tratamientos__lista">${filas}</ul>
   </div>
@@ -213,7 +232,7 @@ function primeraConsulta() {
 function retrato({ foto = false, clase = '' } = {}) {
   const interior = foto
     ? `<img src="/img/jimena.webp" width="800" height="1000" alt="Jimena Teruel, odontóloga, en su consultorio de Escobar" loading="lazy" decoding="async">`
-    : `<div class="retrato__arte">${emblema({ prefijo: 'rt', clase: 'retrato__emblema' })}</div>`;
+    : `<div class="retrato__arte">${emblema({ grande: true, clase: 'retrato__emblema' })}</div>`;
   return `<figure class="retrato ${clase}">
   <div class="retrato__marco">${interior}</div>
   <figcaption><strong>Jimena Teruel</strong><span>Odontóloga, especialista en Endodoncia. M.P. ${N.matriculaNumero}</span></figcaption>
@@ -258,18 +277,83 @@ function lateral(indice = []) {
 
 // ---------- Enlaces relacionados ----------
 function relacionados(ids) {
-  const items = TRATAMIENTOS.filter((x) => ids.includes(x.id));
-  const ico = { endodoncia: 'endodoncia', general: 'general', ortodoncia: 'ortodoncia', urgencias: 'urgencias' };
+  const items = ids.map((id) => PAGINAS_REL[id]).filter(Boolean);
   return `<section class="relacionados" aria-labelledby="rel-t">
   <div class="contenedor">
     <h2 id="rel-t">También te puede interesar</h2>
     <ul class="relacionados__lista">${items
-      .map((x) => `<li><a href="${x.ruta}">${icono(ico[x.id], 'dibujar')}<span><strong>${x.t}</strong><span>${x.d}</span></span></a></li>`)
+      .map((x) => `<li><a href="${x.ruta}">${icono(x.icono, 'dibujar')}<span><strong>${x.t}</strong><span>${x.d}</span></span></a></li>`)
+      .join('')}</ul>
+  </div>
+</section>`;
+}
+
+// ---------- Opiniones de Google ----------
+// Con opiniones cargadas: carrusel. Sin opiniones pero con link de reseña: invitación a opinar. Sin nada: no se muestra.
+function opiniones() {
+  const G = N.google || {};
+  const lista = G.opiniones || [];
+  const linkResena = G.resena || G.perfil;
+  if (!lista.length && !linkResena) return '';
+  const estrellas = (n) => `<span class="op__estrellas" role="img" aria-label="${n} de 5 estrellas">${Array.from({ length: 5 }, (_, i) => `<span class="${i < n ? 'llena' : ''}">${UI.estrella}</span>`).join('')}</span>`;
+  if (!lista.length) {
+    return `<section class="opiniones opiniones--vacia" aria-labelledby="op-t">
+  <div class="contenedor opiniones__invita">
+    ${UI.google}
+    <div><h2 id="op-t">¿Ya te atendiste en el consultorio?</h2><p>Tu opinión en Google ayuda a otros pacientes de Escobar a encontrarnos.</p></div>
+    <a class="btn btn--linea" href="${linkResena}" target="_blank" rel="noopener">Dejar mi opinión en Google</a>
+  </div>
+</section>`;
+  }
+  const tarjetas = lista
+    .map(
+      (o, i) => {
+        const largo = o.texto.length > 210;
+        return `<li class="op${largo ? ' op--largo' : ''}">
+      ${estrellas(o.estrellas || 5)}
+      <blockquote class="op__texto" id="op-txt-${i}"><p>${esc(o.texto)}</p></blockquote>
+      ${largo ? `<button type="button" class="op__mas" aria-expanded="false" aria-controls="op-txt-${i}" data-op-mas>Leer más</button>` : ''}
+      <p class="op__autor"><strong>${esc(o.autor)}</strong><span>Opinión en Google</span></p>
+    </li>`;
+      }
+    )
+    .join('');
+  return `<section class="opiniones" aria-labelledby="op-t">
+  <div class="contenedor">
+    <div class="opiniones__cab">
+      <div>
+        <p class="opiniones__fuente">${UI.google}${G.calificacion ? `<strong class="opiniones__nota">${G.calificacion}</strong>${estrellas(5)}` : ''}<span>${G.total ? `${G.total} opiniones en Google` : 'Opiniones en Google'}</span></p>
+        <h2 id="op-t">Lo que dicen mis pacientes</h2>
+      </div>
+      <div class="opiniones__nav">
+        <button type="button" class="opiniones__btn" data-op-prev aria-label="Opiniones anteriores">${UI.flecha}</button>
+        <button type="button" class="opiniones__btn opiniones__btn--sig" data-op-next aria-label="Más opiniones">${UI.flecha}</button>
+      </div>
+    </div>
+    <ul class="opiniones__lista" data-opiniones tabindex="0" aria-label="Opiniones de pacientes">${tarjetas}</ul>
+    <div class="acciones opiniones__acciones">
+      ${G.perfil ? `<a class="enlace" href="${G.perfil}" target="_blank" rel="noopener">Ver todas las opiniones en Google</a>` : ''}
+      ${G.resena ? `<a class="enlace" href="${G.resena}" target="_blank" rel="noopener">Dejar mi opinión</a>` : ''}
+    </div>
+  </div>
+</section>`;
+}
+
+// ---------- Galería de fotos (se muestra sola si hay fotos en la carpeta) ----------
+function galeria(fotos = [], { titulo = 'El consultorio', id = 'galeria', texto = '' } = {}) {
+  if (!fotos.length) return '';
+  return `<section class="galeria" id="${id}" aria-labelledby="${id}-t">
+  <div class="contenedor">
+    <h2 id="${id}-t">${titulo}</h2>
+    ${texto ? `<p class="galeria__texto">${texto}</p>` : ''}
+    <ul class="galeria__lista">${fotos
+      .map((f) => `<li><img src="${f.src}" width="${f.ancho || 1200}" height="${f.alto || 900}" alt="${esc(f.alt)}" loading="lazy" decoding="async"></li>`)
       .join('')}</ul>
   </div>
 </section>`;
 }
 
 module.exports = {
-  explorador, chequeo, mapa, ubicacion, tratamientos, primeraConsulta, retrato, heroInterno, lateral, relacionados, PASOS,
+  explorador, chequeo, mapa, ubicacion, tratamientos, primeraConsulta, retrato, heroInterno, lateral, relacionados,
+  opiniones, galeria, PASOS, TRATAMIENTOS,
 };

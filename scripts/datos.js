@@ -7,7 +7,7 @@
 module.exports = {
   sitio: {
     // TODO: reemplazar por el dominio definitivo (sin barra final)
-    url: 'https://jimenaodontologia.nexorasaas.com',
+    url: 'https://www.odontologajimenateruel.com.ar',
     nombre: 'Jimena Teruel · Odontóloga',
     idioma: 'es-AR',
     locale: 'es_AR',
@@ -18,7 +18,8 @@ module.exports = {
 
   negocio: {
     id: 'consultorio',
-    nombre: 'Consultorio Odontológico Jimena Teruel',
+    // Mismo nombre que el perfil de Google (ayuda al SEO local)
+    nombre: 'Odontología Integral Jimena Teruel',
     profesional: 'Jimena Teruel',
     titulo: 'Odontóloga',
     especialidad: 'Especialista en Endodoncia',
@@ -41,13 +42,49 @@ module.exports = {
     email: '',
     // TODO: completar si tiene Instagram / Facebook / perfil de Google (se agregan al schema "sameAs")
     redes: {
-      instagram: '',
+      instagram: 'https://www.instagram.com/odontologa.jimenateruel/',
       facebook: '',
-      googleMaps: '',
+      googleMaps: 'https://www.google.com/maps?cid=18103305016400364031',
+    },
+    // Instagram como se muestra en pantalla
+    instagramUsuario: '@odontologa.jimenateruel',
+    // Formación (aparece en "Sobre mí" y en los datos para Google).
+    // TODO: confirmar con Jimena el año de recibida y desde qué año está en el consultorio.
+    formacion: {
+      universidad: 'Universidad de Buenos Aires',
+      universidadCorta: 'UBA',
+      anioTitulo: '',
+      anioEspecialidad: '2012',
+      consultorioDesde: '',
+    },
+    // Opiniones de Google. Se muestran solas cuando hay datos cargados.
+    // perfil: link al perfil de Google Maps. resena: link directo para dejar una opinión.
+    // opiniones: [{ autor: 'Nombre', estrellas: 5, texto: '...', fecha: 'hace 2 semanas' }]
+    // Opiniones copiadas del perfil de Google (14/11/2026). Nombre + inicial del apellido.
+    google: {
+      perfil: 'https://www.google.com/maps?cid=18103305016400364031',
+      resena: 'https://www.google.com/maps?cid=18103305016400364031',
+      calificacion: '5,0',
+      total: 35,
+      opiniones: [
+        { autor: 'Ramona M.', estrellas: 5, fecha: "Hace un mes", texto: "Jimena es muy amorosa y una excelente profesional. Su atención es personalizada y está siempre a disposición de sus pacientes. La recomiendo mucho!" },
+        { autor: 'Leandro T.', estrellas: 5, fecha: "Hace 4 años", texto: "Una genia!!!!, me hice un conducto y salio todo super bien. Mucha paciencia y buena predisposición para con el paciente. La super recomiendo!!!!" },
+        { autor: 'Eliana W.', estrellas: 5, fecha: "Hace 6 meses", texto: "Jime la mejor!!! Llegué a ella hace más de 20 años, con miedo al dentista por un trabajo mal realizado.. después de la primer consulta le dije: \"no te cambio más\"... y así fue!!!" },
+        { autor: 'Bárbara F.', estrellas: 5, fecha: "Hace 7 meses", texto: "Quiero agradecer a la Dra. Jimena por su excelente atención. La consulté de urgencia, a tan solo 10 minutos de cerrar, para que me sacara los puntos de una extracción de muela de juicio. Lo que no esperábamos era que, al revisar, estaba con alveolitis. Había estado atravesando una situación estresante y ella estuvo ahí para calmarme, con mucha templanza y empatía. Su profesionalismo y disposición fueron increíbles. Gracias, Jime, de corazón. ¡Altamente recomendable! Una gran profesional :)" },
+        { autor: 'Débora C.', estrellas: 5, fecha: "Hace 6 meses", texto: "Excelente odontóloga. La conocí por recomendación, y no me arrepiento. Muy paciente y los trabajos, impecables." },
+        { autor: 'Pamela S.', estrellas: 5, fecha: "Hace un año", texto: "Muy buena atención, Jimena tiene una mano impresionante, no duele nada de lo que me hace." },
+        { autor: 'Andrea S.', estrellas: 5, fecha: "Hace 2 años", texto: "Excelente profesional, fui a ella por un comentario de un paciente, donde perdía el miedo al odontologo, y lo comprobé, Jimena es muy prudente, atenta a nosotros, transmite tranquilidad, y su trabajo es impecable, volví a sonreír." },
+        { autor: 'Gladys A.', estrellas: 5, fecha: "Hace 4 años", texto: "Excelente atención! Soy de esas personas que nunca van al dentista por temor o desgano, pero Jimena ha tenido conmigo una paciencia y un amor para atender poco vista en muchos profesionales. Se los recomiendo 100%." },
+        { autor: 'Víctor N.', estrellas: 5, fecha: "Hace un año", texto: "Para mi LA MEJOR, paciencia y sobre todo no te hace doler nada. Super recomendable una genia" },
+        { autor: 'Paula V.', estrellas: 5, fecha: "Hace 4 años", texto: "Exelente profesional y persona. Su atención súper cálida, el consultorio muy prolijo, limpio, y el compromiso con el trabajo es de primera. Gracias por todo Doctora!!!" },
+      ],
     },
     // Horarios para el schema. Formato: { dias: ['Monday','Tuesday'], abre: '09:00', cierra: '18:00' }
     // Mientras esté vacío, el sitio muestra "Atención con turno".
-    horarios: [],
+    horarios: [{ dias: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], abre: '10:30', cierra: '19:30' }],
+    horariosTexto: 'Lunes a viernes de 10:30 a 19:30',
+    // Ubicación exacta (del perfil de Google)
+    geo: { lat: -34.3461669, lng: -58.7931861 },
     // Localidades que se nombran en el contenido y en areaServed
     zonas: [
       'Belén de Escobar',
@@ -60,7 +97,7 @@ module.exports = {
       'Campana',
       'Pilar',
     ],
-    mapsQuery: 'Hipólito Yrigoyen 589, Belén de Escobar, Buenos Aires, Argentina',
+    mapsQuery: 'Odontología Integral Jimena Teruel, Hipólito Yrigoyen 589, Belén de Escobar, Buenos Aires',
   },
 
   // Navegación principal (orden del menú)
@@ -86,7 +123,7 @@ module.exports = {
       frecuencia: 'monthly',
       titulo: 'Odontóloga en Escobar, especialista en Endodoncia | Jimena Teruel',
       descripcion:
-        'Consultorio odontológico en el centro de Escobar. Endodoncia (tratamiento de conducto), odontología general y ortodoncia. Pedí tu turno por WhatsApp.',
+        'Consultorio odontológico en Escobar: endodoncia, prótesis, implantes, blanqueamientos, limpiezas y ortodoncia. Pedí tu turno por WhatsApp.',
       keywords: [
         'odontóloga en Escobar',
         'dentista en Escobar',
@@ -95,6 +132,9 @@ module.exports = {
         'odontología Belén de Escobar',
         'tratamiento de conducto Escobar',
         'ortodoncia Escobar',
+        'implantes dentales Escobar',
+        'blanqueamiento dental Escobar',
+        'prótesis dental Escobar',
         'dentista Garín',
         'dentista Maschwitz',
       ],
@@ -124,17 +164,22 @@ module.exports = {
       ruta: '/odontologia-general/',
       prioridad: '0.9',
       frecuencia: 'monthly',
-      titulo: 'Odontología general en Escobar: limpieza, caries y controles',
+      titulo: 'Odontología en Escobar: prótesis, implantes, limpiezas y blanqueamiento',
       descripcion:
-        'Dentista en Escobar para controles, limpieza dental, arreglos de caries estéticos y extracciones. Te atiende siempre la misma odontóloga. Pedí turno.',
+        'Limpiezas, operatoria dental, prótesis fija y removible, implantes, postes de fibra de vidrio y blanqueamientos en Belén de Escobar. Pedí tu turno.',
       keywords: [
         'dentista en Escobar',
         'odontología general Escobar',
         'limpieza dental Escobar',
         'arreglo de caries',
         'restauraciones estéticas',
-        'extracción dental Escobar',
-        'control odontológico',
+        'prótesis dental Escobar',
+        'prótesis removible',
+        'coronas y puentes',
+        'implantes dentales Escobar',
+        'blanqueamiento dental Escobar',
+        'postes de fibra de vidrio',
+        'operatoria dental',
         'odontólogo Belén de Escobar',
       ],
       migas: 'Odontología general',
@@ -181,10 +226,11 @@ module.exports = {
       frecuencia: 'yearly',
       titulo: 'Jimena Teruel, odontóloga en Escobar | Endodoncia, M.P. 51019',
       descripcion:
-        'Conocé a Jimena Teruel, odontóloga especialista en Endodoncia, matrícula provincial 51019. Atención personalizada en su consultorio de Belén de Escobar.',
+        'Jimena Teruel, odontóloga de la UBA y especialista en Endodoncia (UBA). Matrícula provincial 51019. Atención integral y personalizada en Escobar.',
       keywords: [
         'Jimena Teruel odontóloga',
         'Jimena Teruel endodoncia',
+        'odontóloga UBA Escobar',
         'odontóloga Escobar',
         'especialista en endodoncia Escobar',
         'M.P. 51019',
@@ -238,7 +284,7 @@ module.exports = {
       },
       {
         p: '¿Qué pasa si no me hago la endodoncia que me indicaron?',
-        r: 'La infección del nervio no se cura sola. Puede avanzar al hueso, formar un absceso (flemón) y terminar en la pérdida del diente. Aunque el dolor desaparezca, eso a veces significa que el nervio murió, no que el problema se resolvió.',
+        r: 'Un nervio dañado no se recupera solo. El problema puede avanzar al hueso, formar un absceso (flemón) y terminar en la pérdida del diente. Aunque el dolor desaparezca, eso a veces significa que el nervio murió, no que el problema se resolvió.',
       },
       {
         p: '¿Es mejor sacar el diente que hacer un tratamiento de conducto?',
@@ -261,6 +307,18 @@ module.exports = {
       {
         p: '¿Los arreglos de caries son del color del diente?',
         r: 'Sí. Las restauraciones se hacen con resinas del color del diente, que se adhieren a la pieza y quedan prácticamente invisibles.',
+      },
+      {
+        p: '¿Hacen implantes dentales?',
+        r: 'Sí. La implantología oral permite reemplazar un diente perdido con una raíz artificial de titanio sobre la que se coloca una corona fija. En la consulta evaluamos el hueso y tu salud general para saber si es la mejor opción para vos.',
+      },
+      {
+        p: '¿El blanqueamiento daña los dientes?',
+        r: 'Hecho por una profesional y con los productos indicados, no daña el esmalte. Puede dar algo de sensibilidad por unos días. Antes de blanquear conviene hacer una limpieza y revisar que no haya caries.',
+      },
+      {
+        p: '¿Qué es un poste de fibra de vidrio?',
+        r: 'Es un perno que se coloca dentro de la raíz de un diente con tratamiento de conducto para darle soporte a la reconstrucción o a la corona. La fibra de vidrio es estética y tiene una flexibilidad parecida a la del diente.',
       },
       {
         p: '¿Atienden obras sociales y prepagas?',

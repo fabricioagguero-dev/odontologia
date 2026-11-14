@@ -57,12 +57,16 @@ module.exports = function contacto() {
       </div>
       <div class="dato">
         ${UI.reloj}
-        <div><p class="dato__t">Horarios</p><p>Atención con turno previo. Consultá disponibilidad por WhatsApp.</p></div>
+        <div><p class="dato__t">Horarios</p><p>${N.horariosTexto ? `${N.horariosTexto}, con turno previo.` : 'Atención con turno previo.'} Consultá disponibilidad por WhatsApp.</p></div>
       </div>
       <div class="dato">
         ${UI.whatsapp}
         <div><p class="dato__t">WhatsApp</p><p><a class="enlace" href="${B.wa()}" target="_blank" rel="noopener">${esc(B.telefonoTxt === 'WhatsApp' ? 'Escribinos directamente' : B.telefonoTxt)}</a></p></div>
       </div>
+      ${N.redes.instagram ? `<div class="dato dato--ig">
+        ${UI.instagram}
+        <div><p class="dato__t">Instagram</p><p><a class="enlace" href="${N.redes.instagram}" target="_blank" rel="noopener">${esc(N.instagramUsuario)}</a></p></div>
+      </div>` : ''}
       ${C.mapa()}
     </div>
   </div>

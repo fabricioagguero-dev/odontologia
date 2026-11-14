@@ -10,7 +10,7 @@ module.exports = function urgencias() {
   const casos = [
     ['dolor', 'Dolor de muela intenso', 'Puede ser el nervio inflamado. Evitá masticar de ese lado y los cambios bruscos de temperatura. No te pongas aspirina ni otros medicamentos sobre la encía: lastiman el tejido.'],
     ['flemon', 'Encía o cara hinchada (flemón)', 'Es una señal de infección. Podés aplicar frío por fuera, sobre la mejilla, en intervalos cortos. No pongas calor. Si la hinchazón avanza hacia el ojo o el cuello, o tenés fiebre, andá a una guardia.'],
-    ['roto', 'Diente roto o fisurado', 'Guardá el fragmento si lo tenés, enjuagate con agua tibia y evitá morder con ese diente hasta que lo veamos.'],
+    ['roto', 'Diente roto o fisurado', 'Guardá el fragmento si lo tenés y evitá morder con ese diente hasta que lo veamos.'],
     ['arreglo', 'Se salió un arreglo o una corona', 'Guardá la corona y no intentes pegarla con adhesivos caseros. Evitá alimentos muy duros o pegajosos de ese lado.'],
     ['golpe', 'Un golpe sacó un diente entero', 'Si es un diente permanente, tomalo de la corona y no de la raíz, no lo frotes y conservalo en leche o dentro de la boca. Es una urgencia real: atendete cuanto antes, idealmente dentro de la primera hora.'],
   ];
