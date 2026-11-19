@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
  * servidor-local.js — Vista previa local, igual que en Vercel
- * (URLs limpias, 404 propio y compresión gzip).
+ * (URLs limpias, 404 propio, compresión gzip y el panel /admin/).
  *   npm run dev   →  http://localhost:3000
+ * Para probar el panel en tu compu, creá un archivo .env.local con las mismas
+ * variables que en Vercel (ver README). Ese archivo nunca se sube a GitHub.
  */
 const http = require('http');
 const fs = require('fs');
@@ -10,6 +12,16 @@ const path = require('path');
 const zlib = require('zlib');
 
 const RAIZ = path.join(__dirname, '..', 'public');
+
+// Variables de entorno locales (.env.local) para el panel
+const ENV = path.join(__dirname, '..', '.env.local');
+if (fs.existsSync(ENV)) {
+  for (const linea of fs.readFileSync(ENV, 'utf8').split(/\r?\n/)) {
+    const m = linea.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+  }
+}
+const panel = require('../api/panel');
 const PUERTO = Number(process.env.PORT) || 3000;
 const TIPOS = {
   '.html': 'text/html; charset=utf-8',
@@ -47,6 +59,12 @@ function resolver(url) {
 http
   .createServer((req, res) => {
     const ruta = req.url.split('?')[0];
+    // Funciones del panel (en Vercel: /api/panel/:accion/ → api/panel.js)
+    const api = ruta.match(/^\/api\/panel\/([a-z]+)\/?$/);
+    if (api) {
+      req.query = { accion: api[1] };
+      return panel(req, res);
+    }
     const red = REDIRECCIONES.find((r) => r.source === ruta || r.source + '/' === ruta);
     if (red) {
       res.writeHead(308, { Location: red.destination });

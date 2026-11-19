@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Panel de tu sitio · Jimena Teruel</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F7F8F4">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/figtree-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/admin.css?v=0f85c61f">
+<script src="/js/admin.js?v=cc62898d" defer></script>
+</head>
+<body>
+<div class="cargando" data-cargando><img src="/img/logo/emblema-128.webp" width="64" height="64" alt=""></div>
+<main class="ingreso" data-ingreso hidden>
+<form class="ingreso__caja" data-form-ingreso>
+<img class="ingreso__emblema" src="/img/logo/emblema-128.webp" width="72" height="72" alt="">
+<h1>Tu sitio</h1>
+<p class="ingreso__bajada">Ingresá para hacer cambios en odontologajimenateruel.com.ar</p>
+<label for="clave">Contraseña</label>
+<input id="clave" name="clave" type="password" autocomplete="current-password" required>
+<p class="ingreso__error" data-error-ingreso role="alert" hidden></p>
+<button class="boton boton--primario" type="submit">Entrar</button>
+<div class="ingreso__config" data-config hidden></div>
+</form>
+</main>
+<div class="app" data-app hidden>
+<header class="barra">
+<a class="barra__marca" href="/" target="_blank" rel="noopener">
+<img src="/img/logo/emblema-128.webp" width="36" height="36" alt="">
+<span><strong>Tu sitio</strong><small>Ver cómo se ve</small></span>
+</a>
+<nav class="barra__acciones" aria-label="Panel">
+<button type="button" class="barra__boton barra__boton--movil" data-abrir="hoy">Datos</button>
+<button type="button" class="barra__boton barra__boton--movil" data-abrir="historial">Historial</button>
+<button type="button" class="barra__boton" data-salir>Salir</button>
+</nav>
+</header>
+<div class="app__cuerpo">
+<section class="chat" aria-label="Conversación con el asistente">
+<ol class="chat__lista" data-lista aria-live="polite"></ol>
+</section>
+<aside class="lateral" data-lateral aria-label="Datos e historial">
+<div class="lateral__fondo" data-cerrar-lateral></div>
+<div class="lateral__hoja">
+<section class="tarjeta hoy" data-seccion="hoy">
+<div class="tarjeta__cab"><h2>Así está hoy</h2><button type="button" class="icono-boton" data-cerrar-lateral aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<dl class="hoy__datos" data-hoy><div><dt>Cargando…</dt></div></dl>
+</section>
+<section class="tarjeta historial" data-seccion="historial">
+<div class="tarjeta__cab"><h2>Últimos cambios</h2><button type="button" class="icono-boton" data-cerrar-lateral aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<ol class="historial__lista" data-historial></ol>
+</section>
+</div>
+</aside>
+</div>
+<form class="redactor" data-redactor>
+<ul class="redactor__fotos" data-previas hidden></ul>
+<div class="redactor__fila">
+<label class="redactor__adjuntar" title="Adjuntar fotos">
+<input type="file" accept="image/*" multiple data-archivo>
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8.5 5l1.4-2h4.2l1.4 2"/></svg><span class="sr">Adjuntar fotos</span>
+</label>
+<label class="sr" for="texto">Qué querés cambiar</label>
+<textarea id="texto" rows="1" placeholder="Escribí qué querés cambiar…" data-texto enterkeyhint="send"></textarea>
+<button type="submit" class="redactor__enviar" data-enviar aria-label="Enviar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+</div>
+</form>
+</div>
+<noscript><p class="sin-js">Para usar el panel necesitás tener JavaScript activado.</p></noscript>
+</body>
+</html>

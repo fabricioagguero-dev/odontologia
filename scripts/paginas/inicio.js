@@ -11,15 +11,20 @@ function palabras(txt) {
     .join(' ');
 }
 
-module.exports = function inicio({ foto = false } = {}) {
-  const faqs = [D.faq.endodoncia[0], D.faq.endodoncia[1], D.faq.endodoncia[3], D.faq.general[2], D.faq.consultorio[1]];
+module.exports = function inicio({ foto = '' } = {}) {
+  const T = D.textos;
+  // Preguntas del inicio: si alguna se borra desde el panel, se completa con otras.
+  const elegidas = [D.faq.endodoncia[0], D.faq.endodoncia[1], D.faq.endodoncia[3], D.faq.general[2], D.faq.consultorio[1]].filter(Boolean);
+  const resto = Object.values(D.faq).flat().filter((q) => !elegidas.includes(q));
+  const faqs = [...elegidas, ...resto].slice(0, 5);
+  const iconosDestacados = [UI.persona, UI.escudo, UI.dos, UI.escudo];
 
   const cuerpo = `
 <section class="hero" aria-labelledby="hero-t">
   <div class="contenedor hero__in">
     <div class="hero__texto">
-      <h1 id="hero-t" class="hero__titulo">${palabras('Odontóloga en Escobar, especialista en endodoncia.')}</h1>
-      <p class="hero__lead">Endodoncia, prótesis, implantes, blanqueamientos y ortodoncia en un consultorio tranquilo del centro de Escobar. En cada consulta te atiende la misma profesional, de principio a fin.</p>
+      <h1 id="hero-t" class="hero__titulo">${palabras(esc(T.heroTitulo))}</h1>
+      <p class="hero__lead">${esc(T.heroBajada)}</p>
       <div class="acciones hero__acciones">
         <a class="btn btn--wa btn--grande" href="${wa()}" target="_blank" rel="noopener">${UI.whatsapp}Pedir turno por WhatsApp</a>
         <a class="btn btn--linea btn--grande" href="#tratamientos">Ver tratamientos</a>
@@ -39,9 +44,7 @@ module.exports = function inicio({ foto = false } = {}) {
 
 <section class="porque" id="por-que" aria-label="Por qué atenderte en el consultorio">
   <ul class="contenedor porque__lista">
-    <li>${UI.persona}<div><h2 class="porque__t">Te atiende siempre Jimena</h2><p>Trabaja sola: conoce tu historia y sigue cada tratamiento de cerca.</p></div></li>
-    <li>${UI.escudo}<div><h2 class="porque__t">Especialista en Endodoncia</h2><p>Formación dedicada a salvar dientes que parecían perdidos.</p></div></li>
-    <li>${UI.dos}<div><h2 class="porque__t">Ortodoncista en el consultorio</h2><p>Hacés tu ortodoncia en el mismo lugar, sin derivaciones.</p></div></li>
+    ${T.destacados.map((x, i) => `<li>${iconosDestacados[i] || UI.escudo}<div><h2 class="porque__t">${esc(x.titulo)}</h2><p>${esc(x.texto)}</p></div></li>`).join('\n    ')}
   </ul>
 </section>
 
@@ -55,10 +58,8 @@ ${C.chequeo()}
   <div class="contenedor sobre__in">
     ${C.retrato({ foto })}
     <div class="sobre__txt">
-      <h2 id="sobre-t">Jimena Teruel, tu odontóloga en Escobar</h2>
-      <p class="sobre__lead">Soy odontóloga recibida en la UBA y me especialicé en Endodoncia, también en la UBA, la rama de la odontología que trata el interior del diente: el nervio y los conductos.</p>
-      <p>Brindo atención integral y personalizada, con un enfoque en tratamientos seguros, eficaces y de alta calidad. Trabajo sola en el consultorio: en cada turno te atiendo yo, sé qué hicimos la vez anterior y qué sigue.</p>
-      <p>Para ortodoncia, una colega ortodoncista viene al consultorio a atender a mis pacientes. Así coordinamos entre las dos y vos no tenés que ir de un lado a otro.</p>
+      <h2 id="sobre-t">Jimena Teruel, tu odontóloga en ${esc(N.direccion.partido)}</h2>
+      ${T.presentacion.map((p, i) => `<p${i === 0 ? ' class="sobre__lead"' : ''}>${esc(p)}</p>`).join('\n      ')}
       <a class="enlace" href="/sobre-mi/">Conocé más sobre mí y el consultorio</a>
     </div>
   </div>

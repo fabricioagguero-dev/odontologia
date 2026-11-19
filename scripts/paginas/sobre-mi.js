@@ -1,9 +1,9 @@
 const B = require('../plantillas/base');
 const C = require('../plantillas/componentes');
 const { UI } = require('../plantillas/svg');
-const { N } = B;
+const { N, D, esc } = B;
 
-module.exports = function sobreMi({ foto = false, fotosConsultorio = [] } = {}) {
+module.exports = function sobreMi({ foto = '', fotosConsultorio = [] } = {}) {
   const id = 'sobre-mi';
   const F = N.formacion;
   const titulo = F.anioTitulo ? ` en ${F.anioTitulo}` : '';
@@ -16,14 +16,14 @@ module.exports = function sobreMi({ foto = false, fotosConsultorio = [] } = {}) 
     <div class="pag-hero__txt">
       ${B.migas(id)}
       <h1>Jimena Teruel, odontóloga especialista en Endodoncia</h1>
-      <p class="lead">Atiendo en mi consultorio de Belén de Escobar: endodoncia, prótesis, implantes, limpiezas, operatoria dental, blanqueamientos y, junto a una colega ortodoncista, ortodoncia.</p>
+      <p class="lead">${esc(D.textos.sobreMiBajada)}</p>
       <ul class="credenciales">
         <li>${UI.persona}<span><strong>Odontóloga</strong>${F.universidad} (${F.universidadCorta})</span></li>
         <li>${UI.escudo}<span><strong>Especialista en Endodoncia</strong>${F.universidadCorta}${F.anioEspecialidad ? `, ${F.anioEspecialidad}` : ''}</span></li>
         <li>${UI.escudo}<span><strong>Matrícula Provincial ${N.matriculaNumero}</strong>Provincia de Buenos Aires</span></li>
       </ul>
     </div>
-    ${C.retrato({ foto, clase: 'retrato--hero' })}
+    ${C.retrato({ foto, clase: 'retrato--hero', prioridad: true })}
   </div>
 </section>
 
@@ -31,8 +31,8 @@ module.exports = function sobreMi({ foto = false, fotosConsultorio = [] } = {}) 
   <div class="prosa">
     <section id="formacion">
       <h2>Mi formación</h2>
-      <p class="prosa__lead">Soy odontóloga recibida en la ${F.universidad} (${F.universidadCorta})${titulo}. Me especialicé en Endodoncia, también en la ${F.universidadCorta},${especialidad} y trabajo en mi consultorio de Escobar${desde}.</p>
-      <p>Brindo atención integral y personalizada, con un enfoque en tratamientos seguros, eficaces y de alta calidad. Estoy comprometida con la actualización constante para ofrecer siempre las mejores soluciones a mis pacientes.</p>
+      <p class="prosa__lead">Soy odontóloga recibida en la ${F.universidad} (${F.universidadCorta})${titulo}. Me especialicé en Endodoncia, también en la ${F.universidadCorta},${especialidad} y trabajo en mi consultorio de ${esc(N.direccion.partido)}${desde}.</p>
+      <p>${esc(D.textos.sobreMiCompromiso)}</p>
     </section>
 
     <section id="forma-de-trabajar">

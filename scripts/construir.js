@@ -17,23 +17,40 @@ const PUBLIC = path.join(RAIZ, 'public');
 const B = require('./plantillas/base');
 const { D, S, N, abs } = B;
 
-// Fotos: se detectan solas.
+// Fotos: se cargan desde el panel (contenido/sitio.json → fotos).
+// Si no hay nada cargado ahí, se usan las que estén en las carpetas:
 //  · /public/img/jimena.webp            → reemplaza el logo en el retrato
 //  · /public/img/consultorio/*.webp|jpg → galería "Así es el consultorio" en Sobre mí
-const FOTO = fs.existsSync(path.join(PUBLIC, 'img', 'jimena.webp'));
+const FOTO = D.fotos.retrato || (fs.existsSync(path.join(PUBLIC, 'img', 'jimena.webp')) ? '/img/jimena.webp' : '');
 const DIR_CONS = path.join(PUBLIC, 'img', 'consultorio');
-const FOTOS_CONSULTORIO = fs.existsSync(DIR_CONS)
-  ? fs
-      .readdirSync(DIR_CONS)
-      .filter((f) => /\.(webp|jpe?g|png|avif)$/i.test(f))
-      .sort()
-      .map((f) => ({ src: `/img/consultorio/${f}`, alt: `Consultorio odontológico de Jimena Teruel en Escobar` }))
-  : [];
+const FOTOS_CONSULTORIO = D.fotos.consultorio.length
+  ? D.fotos.consultorio
+  : fs.existsSync(DIR_CONS)
+    ? fs
+        .readdirSync(DIR_CONS)
+        .filter((f) => /\.(webp|jpe?g|png|avif)$/i.test(f))
+        .sort()
+        .map((f) => ({ src: `/img/consultorio/${f}`, alt: `Consultorio odontológico de Jimena Teruel en ${N.direccion.localidad}` }))
+    : [];
+
+// Si el consultorio se muda a otra localidad, los textos fijos que nombran
+// "Belén de Escobar" / "Escobar" se adaptan solos a la dirección nueva.
+const ORIGEN = { localidad: 'Belén de Escobar', partido: 'Escobar' };
+function localizar(txt) {
+  const { localidad, partido } = N.direccion;
+  if (localidad === ORIGEN.localidad && partido === ORIGEN.partido) return txt;
+  return txt
+    .split(ORIGEN.localidad)
+    .map((t) => t.split(ORIGEN.partido).join(partido))
+    .join(localidad);
+}
 
 // ---------- versionado de assets ----------
 const hash = (f) => crypto.createHash('sha1').update(fs.readFileSync(path.join(PUBLIC, f))).digest('hex').slice(0, 8);
 B.assets.css = hash('css/main.css');
 B.assets.js = hash('js/main.js');
+B.assets.adminCss = hash('css/admin.css');
+B.assets.adminJs = hash('js/admin.js');
 
 // ---------- minificado liviano y seguro ----------
 const min = (html) =>
@@ -45,6 +62,7 @@ const min = (html) =>
 
 function escribir(rel, contenido) {
   const destino = path.join(PUBLIC, rel);
+  if (/\.(html|txt|webmanifest)$/.test(rel) && !rel.startsWith('admin')) contenido = localizar(contenido);
   fs.mkdirSync(path.dirname(destino), { recursive: true });
   fs.writeFileSync(destino, contenido);
   return rel;
@@ -69,6 +87,14 @@ for (const [id, fn] of Object.entries(PAGINAS)) {
   generadas.push(escribir(rel, min(fn({ foto: FOTO, fotosConsultorio: FOTOS_CONSULTORIO }))));
 }
 generadas.push(escribir('404.html', min(require('./paginas/404')())));
+generadas.push(escribir('admin/index.html', min(require('./paginas/admin')())));
+
+// ---------- version.json ----------
+// El panel lo consulta para saber cuándo el sitio ya se actualizó con un cambio.
+// "contenido" es el SHA de Git del archivo contenido/sitio.json (el mismo que devuelve GitHub).
+const bytesContenido = fs.readFileSync(D.archivoContenido);
+const shaContenido = crypto.createHash('sha1').update(`blob ${bytesContenido.length}\0`).update(bytesContenido).digest('hex');
+generadas.push(escribir('version.json', JSON.stringify({ contenido: shaContenido, generado: new Date().toISOString() })));
 
 // ---------- sitemap.xml ----------
 const hoy = new Date().toISOString().slice(0, 10);
@@ -96,6 +122,8 @@ generadas.push(
     'robots.txt',
     `User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /api/
 
 Sitemap: ${abs('/sitemap.xml')}
 `
@@ -138,7 +166,7 @@ generadas.push(
 > ${N.titulo} ${N.profesional}, ${N.especialidad.toLowerCase()} (${N.matricula}). Consultorio odontológico en ${N.direccion.calle}, ${N.direccion.detalle.toLowerCase()}, ${N.direccion.localidad}, provincia de ${N.direccion.provincia}, Argentina. Turnos por WhatsApp.
 
 Formación: odontóloga de la ${N.formacion.universidad} (${N.formacion.universidadCorta}), especialista en Endodoncia (${N.formacion.universidadCorta}${N.formacion.anioEspecialidad ? ', ' + N.formacion.anioEspecialidad : ''}).
-Tratamientos: endodoncia (tratamiento de conducto y retratamiento), prótesis fija y removible, implantología oral, limpiezas, operatoria dental, postes de fibra de vidrio, blanqueamientos, ortodoncia con ortodoncista que atiende en el consultorio y urgencias odontológicas.
+Tratamientos: ${D.tratamientos.map((t) => t.nombre.toLowerCase()).join(', ')} y urgencias odontológicas. Ortodoncia con ortodoncista que atiende en el consultorio.\nHorarios: ${N.horariosTexto}.${D.aviso.activo && D.aviso.texto ? `\nAviso: ${D.aviso.texto}` : ''}
 ${N.redes.instagram ? 'Instagram: ' + N.redes.instagram : ''}
 Zonas: ${N.zonas.join(', ')}.
 

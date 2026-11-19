@@ -1,7 +1,7 @@
 /**
  * componentes.js — Bloques reutilizables entre páginas.
  */
-const { esc, wa, mapsEmbed, mapsComoLlegar, N } = require('./base');
+const { esc, wa, mapsEmbed, mapsComoLlegar, N, D } = require('./base');
 const { icono, UI, corteDiente, emblema } = require('./svg');
 
 // ---------- Explorador de endodoncia (interactivo) ----------
@@ -121,7 +121,7 @@ function ubicacion({ titulo = 'Consultorio en el centro de Escobar', nivel = 'h2
         <li>${UI.reloj}<span>${N.horariosTexto || 'Atención con turno previo'}</span></li>
         <li>${UI.whatsapp}<span>Turnos por WhatsApp</span></li>
       </ul>
-      <p class="ubicacion__zonas">Atendemos pacientes de ${N.zonas.slice(0, -2).join(', ')} y alrededores.</p>
+      <p class="ubicacion__zonas">Atendemos pacientes de ${N.zonas.map(esc).join(', ')} y alrededores.</p>
       <div class="acciones">
         <a class="btn btn--primario" href="${mapsComoLlegar}" target="_blank" rel="noopener">${UI.pin}Cómo llegar</a>
         <a class="btn btn--linea" href="${wa()}" target="_blank" rel="noopener">${UI.whatsapp}Pedir turno</a>
@@ -133,48 +133,33 @@ function ubicacion({ titulo = 'Consultorio en el centro de Escobar', nivel = 'h2
 }
 
 // ---------- Tratamientos (lista editorial, los que hace Jimena) ----------
-const TRATAMIENTOS = [
-  {
-    id: 'endodoncia', icono: 'endodoncia', ruta: '/endodoncia/', t: 'Endodoncia',
-    d: 'Tratamiento de conducto para conservar tu diente natural. También retratamientos de conductos hechos antes.',
-    link: 'Cómo es una endodoncia', destacado: 'Especialidad',
-  },
-  {
-    id: 'protesis', icono: 'protesis', ruta: '/odontologia-general/#protesis', t: 'Prótesis fija y removible',
-    d: 'Coronas, puentes y prótesis removibles para reemplazar dientes perdidos y volver a masticar y sonreír con comodidad.',
-    link: 'Más sobre prótesis',
-  },
-  {
-    id: 'ortodoncia', icono: 'ortodoncia', ruta: '/ortodoncia/', t: 'Ortodoncia',
-    d: 'Una ortodoncista atiende en el consultorio: evaluación, aparatos y controles sin ir a otro lugar.',
-    link: 'Más sobre ortodoncia',
-  },
-  {
-    id: 'limpiezas', icono: 'prevencion', ruta: '/odontologia-general/#limpiezas', t: 'Limpiezas',
-    d: 'Eliminación de sarro y placa y pulido para cuidar tus encías y prevenir caries.',
-    link: 'Más sobre limpiezas',
-  },
-  {
-    id: 'implantes', icono: 'implantes', ruta: '/odontologia-general/#implantes', t: 'Implantología oral',
-    d: 'Implantes para reemplazar dientes perdidos con una raíz de titanio y una corona fija.',
-    link: 'Más sobre implantes',
-  },
-  {
-    id: 'operatoria', icono: 'restauracion', ruta: '/odontologia-general/#operatoria', t: 'Operatoria dental',
-    d: 'Arreglos de caries y restauraciones con resinas del color del diente, que quedan naturales.',
-    link: 'Más sobre operatoria',
-  },
-  {
-    id: 'postes', icono: 'postes', ruta: '/odontologia-general/#postes', t: 'Postes de fibra de vidrio',
-    d: 'Refuerzan los dientes con tratamiento de conducto que perdieron estructura, con un material estético y resistente.',
-    link: 'Más sobre postes',
-  },
-  {
-    id: 'blanqueamientos', icono: 'blanqueamiento', ruta: '/odontologia-general/#blanqueamientos', t: 'Blanqueamientos',
-    d: 'Aclarado del color de los dientes de forma segura, indicado y controlado por la profesional.',
-    link: 'Más sobre blanqueamientos',
-  },
-];
+// Los textos salen de contenido/sitio.json. Acá solo se define el ícono y a dónde lleva cada uno.
+const META_TRATAMIENTOS = {
+  endodoncia: { icono: 'endodoncia', ruta: '/endodoncia/', link: 'Cómo es una endodoncia', destacado: 'Especialidad' },
+  ortodoncia: { icono: 'ortodoncia', ruta: '/ortodoncia/', link: 'Más sobre ortodoncia' },
+  protesis: { icono: 'protesis', link: 'Más sobre prótesis' },
+  limpiezas: { icono: 'prevencion', link: 'Más sobre limpiezas' },
+  implantes: { icono: 'implantes', link: 'Más sobre implantes' },
+  operatoria: { icono: 'restauracion', link: 'Más sobre operatoria' },
+  postes: { icono: 'postes', link: 'Más sobre postes' },
+  blanqueamientos: { icono: 'blanqueamiento', link: 'Más sobre blanqueamientos' },
+};
+// Tratamientos con página propia: no se repiten en "Odontología general".
+const CON_PAGINA = new Set(['endodoncia', 'ortodoncia']);
+const TRATAMIENTOS = D.tratamientos.map((x) => {
+  const m = META_TRATAMIENTOS[x.id] || {};
+  return {
+    id: x.id,
+    icono: m.icono || 'general',
+    ruta: m.ruta || `/odontologia-general/#${x.id}`,
+    t: x.nombre,
+    d: x.resumen,
+    detalle: x.detalle || x.resumen,
+    link: m.link || `Más sobre ${x.nombre.toLowerCase()}`,
+    destacado: m.destacado,
+    conPagina: CON_PAGINA.has(x.id),
+  };
+});
 
 // Páginas para el bloque "También te puede interesar"
 const PAGINAS_REL = {
@@ -227,11 +212,12 @@ function primeraConsulta() {
 </section>`;
 }
 
-// ---------- Retrato (espacio para la foto de Jimena) ----------
-// Para usar una foto real: guardá /public/img/jimena.webp (800x1000) y cambiá FOTO a true en construir.js
-function retrato({ foto = false, clase = '' } = {}) {
+// ---------- Retrato (foto de Jimena; sin foto se muestra el emblema) ----------
+// La foto se carga desde el panel (fotos.retrato en contenido/sitio.json).
+function retrato({ foto = '', clase = '', prioridad = false } = {}) {
+  const carga = prioridad ? 'fetchpriority="high"' : 'loading="lazy" decoding="async"';
   const interior = foto
-    ? `<img src="/img/jimena.webp" width="800" height="1000" alt="Jimena Teruel, odontóloga, en su consultorio de Escobar" loading="lazy" decoding="async">`
+    ? `<img src="${esc(foto)}" width="800" height="1000" alt="Jimena Teruel, odontóloga, en su consultorio de ${esc(N.direccion.localidad)}" ${carga}>`
     : `<div class="retrato__arte">${emblema({ grande: true, clase: 'retrato__emblema' })}</div>`;
   return `<figure class="retrato ${clase}">
   <div class="retrato__marco">${interior}</div>

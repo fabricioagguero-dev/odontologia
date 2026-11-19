@@ -16,6 +16,24 @@
   })();
   var waLink = function (texto) { return waBase + '?text=' + encodeURIComponent(texto); };
 
+  /* ---------- aviso temporal: se muestra solo entre sus fechas ---------- */
+  (function () {
+    var aviso = $('[data-aviso]');
+    if (!aviso) return;
+    var d = new Date();
+    var hoy = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    var desde = aviso.getAttribute('data-desde');
+    var hasta = aviso.getAttribute('data-hasta');
+    var visible = (!desde || desde <= hoy) && (!hasta || hasta >= hoy);
+    aviso.hidden = !visible;
+    document.body.classList.toggle('con-aviso', visible);
+    if (!visible) return;
+    var medir = function () { doc.style.setProperty('--aviso-h', aviso.offsetHeight + 'px'); };
+    medir();
+    if ('ResizeObserver' in window) new ResizeObserver(medir).observe(aviso);
+    else window.addEventListener('resize', medir);
+  })();
+
   /* ---------- cabecera + botón flotante según scroll ---------- */
   var cabecera = $('[data-cabecera]');
   var flotante = $('[data-wa-flotante]');

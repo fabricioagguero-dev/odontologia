@@ -243,7 +243,7 @@ ${schema.length ? jsonld(schema) : ''}
 }
 
 // ---------- cabecera ----------
-function cabecera(activa) {
+function cabecera(activa, avisoHTML = '') {
   const links = D.nav
     .map((n) => {
       const r = D.paginas[n.id].ruta;
@@ -253,6 +253,7 @@ function cabecera(activa) {
     .join('');
   return `<a class="saltar" href="#contenido">Saltar al contenido</a>
 <header class="cabecera" data-cabecera>
+  ${avisoHTML}
   <div class="cabecera__in">
     <a class="marca" href="/">
       ${emblema({ clase: 'marca__emblema' })}
@@ -359,10 +360,24 @@ function faqHTML(lista, { abierta = -1 } = {}) {
 }
 
 // ---------- documento completo ----------
+// ---------- Aviso temporal (vacaciones, feriados…) ----------
+// Se edita desde el panel. Con fechas, el navegador lo oculta solo fuera del rango.
+function aviso() {
+  const A = D.aviso || {};
+  if (!A.activo || !A.texto) return '';
+  const hoy = new Date().toISOString().slice(0, 10);
+  if (A.hasta && A.hasta < hoy) return '';
+  return `<div class="aviso" role="status" data-aviso${A.desde ? ` data-desde="${esc(A.desde)}"` : ''}${A.hasta ? ` data-hasta="${esc(A.hasta)}"` : ''}${A.desde && A.desde > hoy ? ' hidden' : ''}>
+  <div class="contenedor aviso__in">${UI.info}<p>${esc(A.texto)}</p></div>
+</div>`;
+}
+
 function documento(id, { cuerpo, schema = [], indexar = true, claseBody = '', precargarHero = false }) {
+  const av = aviso();
+  const clases = [claseBody, av && !av.includes(' hidden>') ? 'con-aviso' : ''].filter(Boolean).join(' ');
   return `${head(id, { schema, indexar, precargarHero })}
-<body class="${claseBody}">
-${cabecera(id)}
+<body class="${clases}">
+${cabecera(id, av)}
 <main id="contenido">
 ${cuerpo}
 </main>

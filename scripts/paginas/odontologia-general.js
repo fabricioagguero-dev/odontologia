@@ -1,20 +1,14 @@
 const B = require('../plantillas/base');
 const C = require('../plantillas/componentes');
 const { icono } = require('../plantillas/svg');
-const { D, abs, N } = B;
+const { D, abs, N, esc } = B;
 
 module.exports = function odontologiaGeneral() {
   const id = 'odontologia-general';
   const faqs = D.faq.general;
 
-  const servicios = [
-    ['limpiezas', 'prevencion', 'Limpiezas', 'Eliminación de sarro y placa, pulido y consejos de cepillado. Es la base para tener encías sanas y prevenir caries.'],
-    ['operatoria', 'restauracion', 'Operatoria dental', 'Arreglos de caries y restauraciones con resinas del color del diente, que se adhieren a la pieza y quedan naturales.'],
-    ['protesis', 'protesis', 'Prótesis fija y removible', 'Coronas y puentes fijos o prótesis removibles para reemplazar dientes perdidos y recuperar la forma de masticar y la estética.'],
-    ['implantes', 'implantes', 'Implantología oral', 'Un implante es una raíz artificial de titanio sobre la que se coloca una corona fija. Es la forma más parecida a tener un diente propio.'],
-    ['postes', 'postes', 'Postes de fibra de vidrio', 'Refuerzan desde adentro los dientes con tratamiento de conducto que perdieron estructura, para que la reconstrucción o la corona quede firme.'],
-    ['blanqueamientos', 'blanqueamiento', 'Blanqueamientos', 'Aclarado del color de los dientes de forma segura, con productos profesionales y bajo control de la odontóloga.'],
-  ];
+  // Todos los tratamientos que no tienen página propia (se editan desde el panel).
+  const servicios = C.TRATAMIENTOS.filter((x) => !x.conPagina).map((x) => [x.id, x.icono, x.t, x.detalle]);
 
   const cuerpo = `
 ${C.heroInterno({
@@ -32,9 +26,9 @@ ${C.heroInterno({
       .map(
         ([ancla, ico, t, d]) => `<li class="servicio" id="${ancla}">
       ${icono(ico, 'servicio__icono dibujar')}
-      <h3>${t}</h3>
-      <p>${d}</p>
-      <a class="enlace" href="${B.wa(`Hola Jimena, quisiera consultar por ${t.toLowerCase()}.`)}" target="_blank" rel="noopener">Consultar por ${t.toLowerCase()}</a>
+      <h3>${esc(t)}</h3>
+      <p>${esc(d)}</p>
+      <a class="enlace" href="${B.wa(`Hola Jimena, quisiera consultar por ${t.toLowerCase()}.`)}" target="_blank" rel="noopener">Consultar por ${esc(t.toLowerCase())}</a>
     </li>`
       )
       .join('')}</ul>
