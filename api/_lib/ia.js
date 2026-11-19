@@ -158,8 +158,12 @@ const conTiempo = (ms) => {
 };
 
 // ---------- Gemini (gratis) ----------
-const MODELOS_GEMINI = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite'];
-let formatoGemini = 0; // 0: responseFormat (actual) · 1: responseJsonSchema · 2: solo JSON
+// Modelos gratuitos, en orden de preferencia (Google recomienda 3.8 Flash y 3.5 Flash-Lite).
+// Si uno no existe, está saturado o tarda demasiado, se prueba el siguiente.
+const MODELOS_GEMINI = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-lite-latest', 'gemini-flash-latest'];
+let formatoGemini = 1; // 1: responseJsonSchema · 2: solo "application/json"
+const noDisponibles = new Set(); // modelos que dieron 404 (se recuerdan mientras la función siga activa)
+let ultimoBueno = null; // el último modelo que respondió bien se prueba primero
 
 function cuerpoGemini({ sistema, turnos, formato }) {
   const contents = [];
@@ -175,22 +179,26 @@ function cuerpoGemini({ sistema, turnos, formato }) {
   }
   while (contents.length && contents[0].role !== 'user') contents.shift();
   const generationConfig = {};
-  if (formato === 0) generationConfig.responseFormat = { text: { mimeType: 'application/json', schema: ESQUEMA_RESPUESTA } };
-  else if (formato === 1) Object.assign(generationConfig, { responseMimeType: 'application/json', responseJsonSchema: ESQUEMA_RESPUESTA });
+  if (formato === 1) Object.assign(generationConfig, { responseMimeType: 'application/json', responseJsonSchema: ESQUEMA_RESPUESTA });
   else generationConfig.responseMimeType = 'application/json';
   return { systemInstruction: { parts: [{ text: sistema }] }, contents, generationConfig };
 }
 
-async function gemini({ sistema, turnos }) {
+async function gemini({ sistema, turnos, hasta }) {
   const clave = process.env.GEMINI_API_KEY;
   if (!clave) throw new ErrorPanel(503, 'Falta configurar la clave de la IA (GEMINI_API_KEY).');
-  const modelos = [...new Set([process.env.GEMINI_MODEL, ...MODELOS_GEMINI].filter(Boolean))];
+  const limiteTotal = hasta || Date.now() + 45000;
+  const modelos = [...new Set([process.env.GEMINI_MODEL, ultimoBueno, ...MODELOS_GEMINI].filter(Boolean))].filter((m) => !noDisponibles.has(m));
   let ultimo = null;
   let limite = false;
+  let saturado = false;
   for (const modelo of modelos) {
-    for (let intento = 0; intento < 3; intento++) {
+    for (let intento = 0; intento < 2; intento++) {
+      const restante = limiteTotal - Date.now();
+      if (restante < 5000) throw new ErrorPanel(503, 'La IA está tardando más de lo normal. Probá de nuevo en un minuto.');
       const formato = formatoGemini;
-      const t = conTiempo(40000);
+      const t = conTiempo(Math.min(30000, restante - 1000));
+      const inicio = Date.now();
       let r;
       try {
         r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
@@ -201,6 +209,7 @@ async function gemini({ sistema, turnos }) {
         });
       } catch (e) {
         t.listo();
+        console.error(`[ia] ${modelo} → sin respuesta en ${Date.now() - inicio} ms (${e.name})`);
         ultimo = e;
         break; // probar otro modelo
       }
@@ -212,30 +221,44 @@ async function gemini({ sistema, turnos }) {
         const partes = (cand && cand.content && cand.content.parts) || [];
         const salida = partes.filter((p) => !p.thought && typeof p.text === 'string').map((p) => p.text).join('');
         if (!salida) {
+          console.error(`[ia] ${modelo} → respuesta vacía (${cand && cand.finishReason})`);
           ultimo = new Error(`sin texto (${cand && cand.finishReason})`);
           break;
         }
-        return { ...normalizarSalida(extraerJSON(salida)), modelo };
+        let json;
+        try {
+          json = extraerJSON(salida);
+        } catch (e) {
+          console.error(`[ia] ${modelo} → no devolvió JSON: ${salida.slice(0, 200)}`);
+          ultimo = e;
+          break;
+        }
+        ultimoBueno = modelo;
+        console.log(`[ia] ${modelo} respondió en ${Date.now() - inicio} ms`);
+        return { ...normalizarSalida(json), modelo };
       }
-      console.error(`[ia] ${modelo} (formato ${formato}) → ${r.status}: ${texto.slice(0, 300)}`);
-      // Si el formato de respuesta estructurada no es aceptado, probar el siguiente formato.
-      if (r.status === 400 && formato < 2 && /responseFormat|responseJsonSchema|Unknown name|Invalid JSON payload|schema/i.test(texto)) {
-        formatoGemini = formato + 1;
+      console.error(`[ia] ${modelo} (formato ${formato}) → ${r.status} en ${Date.now() - inicio} ms: ${texto.slice(0, 300)}`);
+      // Si el formato de respuesta estructurada no es aceptado, se prueba el más simple.
+      if (r.status === 400 && formato < 2 && /responseJsonSchema|response_json_schema|Unknown name|Invalid JSON payload|schema/i.test(texto)) {
+        formatoGemini = 2;
         continue;
       }
       if (r.status === 400 && /API key|API_KEY/i.test(texto)) throw new ErrorPanel(503, 'La clave de la IA (GEMINI_API_KEY) no es válida.');
       if (r.status === 403) throw new ErrorPanel(503, 'La clave de la IA no tiene permiso. Revisá GEMINI_API_KEY.');
+      if (r.status === 404) noDisponibles.add(modelo);
       if (r.status === 429) limite = true;
+      if (r.status === 503) saturado = true;
       ultimo = new Error(`${r.status}`);
-      break; // 404 (modelo no disponible), 429 (límite), 5xx → siguiente modelo
+      break; // 404 (modelo no disponible), 429 (límite), 5xx (saturado) → siguiente modelo
     }
   }
   if (limite) throw new ErrorPanel(429, 'La IA gratuita llegó a su límite por ahora. Probá de nuevo en unos minutos.');
+  if (saturado) throw new ErrorPanel(503, 'La IA de Google está saturada en este momento. Probá de nuevo en un minuto.');
   throw new ErrorPanel(502, 'La IA no respondió. Probá de nuevo en un momento.', { detalle: ultimo && ultimo.message });
 }
 
 // ---------- Claude (opcional, pago por uso) ----------
-async function claude({ sistema, turnos }) {
+async function claude({ sistema, turnos, hasta }) {
   const clave = process.env.ANTHROPIC_API_KEY;
   if (!clave) throw new ErrorPanel(503, 'Falta configurar ANTHROPIC_API_KEY.');
   // La API exige que la conversación empiece con el usuario y alterne turnos.
@@ -254,7 +277,9 @@ async function claude({ sistema, turnos }) {
     else mensajes.push({ role: rol, content });
   }
   while (mensajes.length && mensajes[0].role !== 'user') mensajes.shift();
-  const t = conTiempo(50000);
+  const restante = (hasta || Date.now() + 50000) - Date.now();
+  if (restante < 5000) throw new ErrorPanel(503, 'La IA está tardando más de lo normal. Probá de nuevo en un minuto.');
+  const t = conTiempo(restante - 1000);
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': clave, 'anthropic-version': '2023-06-01' },
@@ -267,7 +292,11 @@ async function claude({ sistema, turnos }) {
       tool_choice: { type: 'tool', name: 'responder' },
     }),
     signal: t.signal,
-  }).finally(t.listo);
+  })
+    .catch((e) => {
+      throw new ErrorPanel(503, 'La IA está tardando más de lo normal. Probá de nuevo en un minuto.', { detalle: e.message });
+    })
+    .finally(t.listo);
   const texto = await r.text();
   if (!r.ok) {
     console.error(`[ia] claude → ${r.status}: ${texto.slice(0, 300)}`);
@@ -290,11 +319,12 @@ function proveedor() {
 
 /**
  * turnos: [{ rol: 'usuario'|'asistente', texto, imagenes?: [{id, mime, datos}] }]
+ * hasta: momento límite (ms) para tener la respuesta; Vercel corta la función a los 60 s.
  */
-async function generar({ sistema, turnos }) {
+async function generar({ sistema, turnos, hasta }) {
   const p = proveedor();
   if (!p) throw new ErrorPanel(503, 'Falta configurar la IA (GEMINI_API_KEY).');
-  return p === 'claude' ? claude({ sistema, turnos }) : gemini({ sistema, turnos });
+  return p === 'claude' ? claude({ sistema, turnos, hasta }) : gemini({ sistema, turnos, hasta });
 }
 
 module.exports = { generar, instrucciones, proveedor, ESQUEMA_RESPUESTA, extraerJSON, normalizarSalida, cuerpoGemini, calendario };

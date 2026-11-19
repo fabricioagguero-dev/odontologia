@@ -46,7 +46,11 @@
           mostrarIngreso();
           throw new Error(j.error || 'Tu sesión terminó.');
         }
-        if (!r.ok) throw new Error(j.error || 'Algo salió mal. Probá de nuevo.');
+        if (!r.ok) {
+          if (j.error) throw new Error(j.error);
+          if (r.status === 504) throw new Error('La IA tardó demasiado en responder. Probá de nuevo en un momento.');
+          throw new Error('No se pudo conectar con el panel. Revisá tu conexión y probá de nuevo.');
+        }
         return j;
       });
     });

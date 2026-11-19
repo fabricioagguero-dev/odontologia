@@ -180,16 +180,26 @@ async function chat(req, res) {
   if (conImagen.length) turnos[turnos.length - 1].imagenes = conImagen;
   const fotosIds = fotos.map((f) => f.id);
 
+  // Vercel corta la función a los 60 s: la IA tiene hasta 50 s en total (incluidas las correcciones).
+  const hasta = inicio + 50000;
   let salida = null;
   let revision = { duros: [], blandos: [] };
   for (let vuelta = 0; vuelta < 3; vuelta++) {
-    salida = await IA.generar({ sistema, turnos });
+    let intento;
+    try {
+      intento = await IA.generar({ sistema, turnos, hasta });
+    } catch (e) {
+      // Si ya había una respuesta (y falló solo la corrección), se usa esa.
+      if (salida) break;
+      throw e;
+    }
+    salida = intento;
     // El pin del mapa lo calcula el sistema, no la IA.
     salida.cambios = salida.cambios.filter((c) => !/^negocio\.geo/.test(c.campo));
     if (!salida.cambios.length) break;
     revision = revisar(actual, salida.cambios, fotosIds);
     const hayQueCorregir = revision.duros.length || (revision.blandos.length && vuelta === 0);
-    if (!hayQueCorregir || vuelta === 2 || Date.now() - inicio > 32000) break;
+    if (!hayQueCorregir || vuelta === 2 || hasta - Date.now() < 15000) break;
     const { modelo, ...sinModelo } = salida;
     turnos.push({ rol: 'asistente', texto: JSON.stringify(sinModelo) });
     turnos.push({
