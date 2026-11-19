@@ -74,6 +74,17 @@ Jimena escribe ─► /api/panel/chat ─► IA (Gemini, gratis) ─► propuest
 Creá `.env.local` (no se sube a GitHub) con las mismas variables y corré `npm run dev` →
 http://localhost:3000/admin/. Ojo: publicar desde ahí también hace un commit real en GitHub.
 
+## Seguridad: Nexora Sentinel
+
+El sitio está conectado a **Nexora Sentinel** con el archivo `middleware.ts` (el conector estándar de
+Nexora, igual en todos los sitios). Antes de mostrar cada página le pregunta a Sentinel si la visita
+es segura: los ataques se bloquean, los bots sospechosos reciben el desafío invisible y todo queda en
+el **Nexora Panel** (visitas, ataques e IPs bloqueadas en toda la red).
+
+- Necesita la variable `SENTINEL_CLAVE` en Vercel (la misma clave que tiene el proyecto `nexora`).
+- Sin la variable, o si Sentinel no responde, el sitio funciona igual (nunca se rompe por el conector).
+- Imágenes, estilos, scripts, fuentes y `/api/` (el panel) no pasan por Sentinel, así la página sigue siendo rápida.
+
 ## Pendientes
 
 | Pendiente | Dónde |

@@ -1,9 +1,11 @@
-/* Panel de tu sitio — Jimena Teruel (vanilla, sin dependencias) */
+/* Panel de tu sitio — Jimena Teruel (vanilla, sin dependencias) · Desarrollado por NexoraSaaS */
 (function () {
   'use strict';
 
   var API = '/api/panel/';
-  var GUARDADO = 'panel-jimena-v1';
+  var CLAVE_CHATS = 'panel-jimena-chats-v2';
+  var CLAVE_VIEJA = 'panel-jimena-v1';
+  var MAX_CHATS = 60;
   var $ = function (s, c) { return (c || document).querySelector(s); };
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
   var tactil = window.matchMedia('(pointer: coarse)').matches;
@@ -17,12 +19,15 @@
     'Quiero agregar una pregunta frecuente',
   ];
 
+  var ICO_BORRAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
+
   var estado = {
-    mensajes: [], // { rol, texto, fotos?, propuesta?, pedido?, tipo? }
-    fotos: {}, // id → { url, full: {datos, mime, ancho, alto}, thumb: {datos, mime}, enviada }
-    previas: [], // ids adjuntados todavía sin enviar
-    sigFoto: 1,
-    ocupado: false,
+    chats: [], // [{ id, titulo, creado, actualizado, sigFoto, mensajes: [{ rol, texto, fotos?, minis?, propuesta?, pedido?, tipo? }] }]
+    activo: null, // id del chat abierto
+    fotos: {}, // chatId → { 'foto:1': { url, mini, full, thumb } } (solo en memoria)
+    previas: [], // fotos adjuntadas todavía sin enviar (del chat activo)
+    ocupado: null, // id del chat que está esperando a la IA
+    confirmarBorrado: null, // id del chat con la confirmación abierta
     soporte: '',
   };
 
@@ -31,6 +36,9 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
+  }
+  function nuevoId() {
+    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
   function api(accion, opciones) {
@@ -56,27 +64,196 @@
     });
   }
 
-  function guardar() {
-    try {
-      var liviano = estado.mensajes.slice(-40).map(function (m) {
-        var c = Object.assign({}, m);
-        delete c.fotos; // las fotos no se guardan (son pesadas)
-        return c;
-      });
-      sessionStorage.setItem(GUARDADO, JSON.stringify(liviano));
-    } catch (e) { /* sin almacenamiento: no pasa nada */ }
+  // ---------- chats guardados en este dispositivo ----------
+  function chatPorId(id) {
+    for (var i = 0; i < estado.chats.length; i++) if (estado.chats[i].id === id) return estado.chats[i];
+    return null;
   }
-  function recuperar() {
-    try {
-      var x = JSON.parse(sessionStorage.getItem(GUARDADO) || '[]');
-      if (Array.isArray(x)) estado.mensajes = x;
-    } catch (e) { estado.mensajes = []; }
-    // Si se recargó mientras se publicaba, ya no podemos seguir el progreso
-    estado.mensajes.forEach(function (m) {
-      if (m.propuesta && (m.propuesta.estado === 'publicando' || m.propuesta.estado === 'actualizando')) m.propuesta.estado = 'enviada';
-    });
+  function chatActivo() { return chatPorId(estado.activo); }
+  function fotosDe(chat) {
+    if (!estado.fotos[chat.id]) estado.fotos[chat.id] = {};
+    return estado.fotos[chat.id];
   }
 
+  function guardar() {
+    var datos = estado.chats
+      .filter(function (c) { return c.mensajes.length; })
+      .sort(function (a, b) { return b.actualizado - a.actualizado; })
+      .slice(0, MAX_CHATS)
+      .map(function (c) {
+        return {
+          id: c.id, titulo: c.titulo, creado: c.creado, actualizado: c.actualizado, sigFoto: c.sigFoto,
+          mensajes: c.mensajes.filter(function (m) { return m.tipo !== 'pensando'; }).slice(-120),
+        };
+      });
+    try {
+      localStorage.setItem(CLAVE_CHATS, JSON.stringify({ chats: datos, activo: estado.activo }));
+    } catch (e) {
+      // Sin lugar: se sacan las miniaturas de las fotos de los chats más viejos y se reintenta.
+      try {
+        datos = JSON.parse(JSON.stringify(datos));
+        datos.slice(Math.ceil(datos.length / 3)).forEach(function (c) { c.mensajes.forEach(function (m) { delete m.minis; }); });
+        localStorage.setItem(CLAVE_CHATS, JSON.stringify({ chats: datos, activo: estado.activo }));
+      } catch (e2) { /* sin almacenamiento: los chats duran mientras la página esté abierta */ }
+    }
+  }
+
+  function cargarChats() {
+    var guardado = null;
+    try { guardado = JSON.parse(localStorage.getItem(CLAVE_CHATS) || 'null'); } catch (e) { guardado = null; }
+    estado.chats = guardado && Array.isArray(guardado.chats) ? guardado.chats : [];
+    // La versión anterior del panel guardaba una sola conversación.
+    try {
+      var viejo = JSON.parse(sessionStorage.getItem(CLAVE_VIEJA) || 'null');
+      if (Array.isArray(viejo) && viejo.length) {
+        var primero = viejo.filter(function (m) { return m.rol === 'usuario'; })[0];
+        estado.chats.unshift({ id: nuevoId(), titulo: titular(primero ? primero.texto : 'Chat anterior'), creado: Date.now(), actualizado: Date.now(), sigFoto: 1, mensajes: viejo });
+      }
+      sessionStorage.removeItem(CLAVE_VIEJA);
+    } catch (e) { /* nada */ }
+    // Si se recargó mientras se publicaba, ya no podemos seguir el progreso.
+    estado.chats.forEach(function (c) {
+      c.mensajes = (c.mensajes || []).filter(function (m) { return m.tipo !== 'pensando'; });
+      c.mensajes.forEach(function (m) {
+        if (m.propuesta && (m.propuesta.estado === 'publicando' || m.propuesta.estado === 'actualizando')) m.propuesta.estado = 'enviada';
+      });
+    });
+    estado.activo = null;
+    if (guardado && guardado.activo && chatPorId(guardado.activo)) estado.activo = guardado.activo;
+    if (!estado.activo) crearChat();
+  }
+
+  function titular(texto) {
+    var t = String(texto || '').replace(/\s+/g, ' ').trim();
+    if (!t) return 'Nuevo chat';
+    return t.length > 46 ? t.slice(0, 45).trimEnd() + '…' : t;
+  }
+
+  function crearChat() {
+    var actual = chatActivo();
+    if (actual && !actual.mensajes.length) return actual; // ya hay uno vacío abierto
+    var c = { id: nuevoId(), titulo: 'Nuevo chat', creado: Date.now(), actualizado: Date.now(), sigFoto: 1, mensajes: [] };
+    estado.chats.unshift(c);
+    estado.activo = c.id;
+    return c;
+  }
+
+  function abrirChat(id) {
+    if (!chatPorId(id)) return;
+    estado.activo = id;
+    estado.previas = [];
+    estado.confirmarBorrado = null;
+    pintarPrevias();
+    pintar();
+    pintarChats();
+    cerrarChats();
+    guardar();
+  }
+
+  function borrarChat(id) {
+    estado.chats = estado.chats.filter(function (c) { return c.id !== id; });
+    delete estado.fotos[id];
+    estado.confirmarBorrado = null;
+    if (estado.activo === id) {
+      estado.activo = null;
+      var siguiente = estado.chats
+        .filter(function (c) { return c.mensajes.length; })
+        .sort(function (a, b) { return b.actualizado - a.actualizado; })[0];
+      if (siguiente) estado.activo = siguiente.id;
+      else crearChat();
+      estado.previas = [];
+      pintarPrevias();
+      pintar();
+    }
+    pintarChats();
+    guardar();
+  }
+
+  // ---------- lista de chats ----------
+  function grupoDe(ms) {
+    var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    var dia = 864e5;
+    if (ms >= hoy.getTime()) return 'Hoy';
+    if (ms >= hoy.getTime() - dia) return 'Ayer';
+    if (ms >= hoy.getTime() - 6 * dia) return 'Últimos 7 días';
+    if (ms >= hoy.getTime() - 29 * dia) return 'Últimos 30 días';
+    return 'Anteriores';
+  }
+
+  function pintarChats() {
+    var nav = $('[data-lista-chats]');
+    var conMensajes = estado.chats
+      .filter(function (c) { return c.mensajes.length; })
+      .sort(function (a, b) { return b.actualizado - a.actualizado; });
+    if (!conMensajes.length) {
+      nav.innerHTML = '<p class="chats__vacio">Acá van a aparecer tus chats.</p>';
+      return;
+    }
+    var grupos = [];
+    conMensajes.forEach(function (c) {
+      var g = grupoDe(c.actualizado);
+      var ultimo = grupos[grupos.length - 1];
+      if (!ultimo || ultimo.nombre !== g) grupos.push((ultimo = { nombre: g, chats: [] }));
+      ultimo.chats.push(c);
+    });
+    nav.innerHTML = grupos.map(function (g) {
+      return '<section class="chats__grupo"><h2 class="chats__grupo-t">' + esc(g.nombre) + '</h2><ul>' +
+        g.chats.map(function (c) {
+          if (estado.confirmarBorrado === c.id) {
+            return '<li class="chat-item chat-item--confirmar"><p>¿Eliminar «' + esc(c.titulo) + '»? Los cambios ya publicados en tu sitio no se borran.</p>' +
+              '<div><button type="button" class="boton boton--peligro" data-borrar-si="' + c.id + '">Eliminar</button>' +
+              '<button type="button" class="boton boton--texto" data-borrar-no>Cancelar</button></div></li>';
+          }
+          return '<li class="chat-item"' + (c.id === estado.activo ? ' aria-current="true"' : '') + '>' +
+            '<button type="button" class="chat-item__abrir" data-abrir-chat="' + c.id + '" title="' + esc(c.titulo) + '">' + esc(c.titulo) + '</button>' +
+            '<button type="button" class="chat-item__borrar" data-borrar-chat="' + c.id + '" aria-label="Eliminar el chat ' + esc(c.titulo) + '">' + ICO_BORRAR + '</button></li>';
+        }).join('') + '</ul></section>';
+    }).join('');
+  }
+
+  $('[data-lista-chats]').addEventListener('click', function (e) {
+    var t = e.target;
+    var abrir = t.closest('[data-abrir-chat]');
+    if (abrir) return abrirChat(abrir.getAttribute('data-abrir-chat'));
+    var borrar = t.closest('[data-borrar-chat]');
+    if (borrar) {
+      estado.confirmarBorrado = borrar.getAttribute('data-borrar-chat');
+      pintarChats();
+      var si = $('[data-borrar-si]');
+      if (si) si.focus();
+      return;
+    }
+    var si2 = t.closest('[data-borrar-si]');
+    if (si2) return borrarChat(si2.getAttribute('data-borrar-si'));
+    if (t.closest('[data-borrar-no]')) {
+      estado.confirmarBorrado = null;
+      pintarChats();
+    }
+  });
+
+  var panelChats = $('[data-chats]');
+  function cerrarChats() { panelChats.removeAttribute('data-abierto'); }
+
+  $('[data-nuevo-chat]').addEventListener('click', function () {
+    crearChat();
+    estado.previas = [];
+    estado.confirmarBorrado = null;
+    pintarPrevias();
+    pintar();
+    pintarChats();
+    cerrarChats();
+    guardar();
+    if (!tactil) area.focus();
+  });
+  $('[data-abrir-chats]').addEventListener('click', function () {
+    pintarChats();
+    panelChats.setAttribute('data-abierto', '');
+  });
+  panelChats.addEventListener('click', function (e) {
+    if (e.target.closest('[data-cerrar-chats]')) cerrarChats();
+  });
+
+  // ---------- fechas ----------
   var fechaRel = (function () {
     var rtf = 'Intl' in window && Intl.RelativeTimeFormat ? new Intl.RelativeTimeFormat('es-AR', { numeric: 'auto' }) : null;
     return function (iso) {
@@ -116,11 +293,12 @@
     ocultarCarga();
     $('[data-ingreso]').hidden = true;
     $('[data-app]').hidden = false;
-    recuperar();
+    cargarChats();
     pintar();
+    pintarChats();
     cargarHoy();
     cargarHistorial();
-    if (!tactil) $('[data-texto]').focus();
+    if (!tactil) area.focus();
   }
 
   // ---------- ingreso ----------
@@ -148,8 +326,6 @@
 
   $('[data-salir]').addEventListener('click', function () {
     api('sesion', { metodo: 'DELETE' }).catch(function () {}).then(function () {
-      try { sessionStorage.removeItem(GUARDADO); } catch (e) {}
-      estado.mensajes = [];
       mostrarIngreso();
     });
   });
@@ -157,9 +333,17 @@
   // ---------- conversación ----------
   var lista = $('[data-lista]');
   var chat = $('.chat');
+  var form = $('[data-redactor]');
+  var area = $('[data-texto]');
+  var botonEnviar = $('[data-enviar]');
 
   function bajar() {
     requestAnimationFrame(function () { chat.scrollTop = chat.scrollHeight; });
+  }
+
+  function firmaNexora() {
+    var f = $('.chats__pie .nx-firma');
+    return f ? '<div class="bienvenida__firma">' + f.outerHTML + '</div>' : '';
   }
 
   function bienvenidaHTML() {
@@ -168,22 +352,35 @@
       '<h1>Hola, Jimena.</h1>' +
       '<p>Contame qué querés cambiar en tu sitio, como se lo dirías a una persona. Yo preparo los cambios y vos los revisás antes de publicarlos.</p>' +
       '<ul class="ejemplos">' + EJEMPLOS.map(function (x) { return '<li><button type="button" data-ejemplo>' + esc(x) + '</button></li>'; }).join('') + '</ul>' +
+      firmaNexora() +
       '</li>';
   }
 
-  function fotosHTML(ids) {
-    if (!ids || !ids.length) return '';
-    return '<ul class="msg__fotos">' + ids.map(function (id) {
-      var f = estado.fotos[id];
-      return f ? '<li><img src="' + f.url + '" alt="Foto adjuntada (' + esc(id) + ')"></li>' : '';
+  // URL para mostrar una foto: la de esta sesión o la miniatura guardada.
+  function urlFoto(c, id) {
+    var f = fotosDe(c)[id];
+    if (f && f.url) return f.url;
+    for (var i = 0; i < c.mensajes.length; i++) {
+      var m = c.mensajes[i];
+      if (m.minis && m.minis[id]) return m.minis[id];
+    }
+    return '';
+  }
+
+  function fotosHTML(c, m) {
+    if (!m.fotos || !m.fotos.length) return '';
+    return '<ul class="msg__fotos">' + m.fotos.map(function (id) {
+      var u = urlFoto(c, id);
+      return u ? '<li><img src="' + esc(u) + '" alt="Foto adjuntada (' + esc(id) + ')"></li>' : '';
     }).join('') + '</ul>';
   }
 
-  function filaHTML(f) {
+  function filaHTML(c, f) {
     var marca = f.automatico ? '<span class="fila__marca">Se calcula solo</span>'
       : f.tipo === 'agregar' ? '<span class="fila__marca">Nuevo</span>'
       : f.tipo === 'quitar' ? '<span class="fila__marca fila__marca--quitar">Se quita</span>' : '';
-    var foto = f.foto && estado.fotos[f.foto] ? '<img class="fila__foto" src="' + estado.fotos[f.foto].url + '" alt="">' : '';
+    var u = f.foto ? urlFoto(c, f.foto) : '';
+    var foto = u ? '<img class="fila__foto" src="' + esc(u) + '" alt="">' : '';
     var mapa = f.mapa ? '<a class="fila__mapa" href="https://www.google.com/maps?q=' + f.mapa.lat + ',' + f.mapa.lng + '" target="_blank" rel="noopener">Ver el punto en el mapa</a>' : '';
     var despues = f.foto ? '' : f.despues;
     return '<li class="fila fila--' + esc(f.tipo) + '">' +
@@ -204,7 +401,7 @@
     var orden = { publicando: 0, actualizando: 1, listo: 2, demora: 1, error: 0 };
     var n = orden[p.estado];
     var items = PASOS.map(function (paso, i) {
-      var valor = i < n || p.estado === 'listo' ? 'hecho' : i === n ? (p.estado === 'error' ? 'error' : p.estado === 'demora' ? 'activo' : 'activo') : '';
+      var valor = i < n || p.estado === 'listo' ? 'hecho' : i === n ? (p.estado === 'error' ? 'error' : 'activo') : '';
       var texto = paso[1];
       if (i === 0 && p.estado === 'publicando') texto = 'Guardando los cambios…';
       if (i === 0 && p.estado === 'error') texto = p.error || 'No se pudo publicar.';
@@ -217,7 +414,7 @@
     return '<ol class="progreso">' + items + '</ol>' + final;
   }
 
-  function propuestaHTML(p, i) {
+  function propuestaHTML(c, p, i) {
     var cerrada = p.estado === 'descartada' || p.estado === 'reemplazada';
     var pie;
     if (p.estado === 'pendiente') {
@@ -228,13 +425,13 @@
     } else if (p.estado === 'reemplazada') {
       pie = '<p class="vacio">Reemplazada por la propuesta nueva.</p>';
     } else if (p.estado === 'enviada') {
-      pie = '<p class="vacio">Publicada. Si no ves el cambio, revisá el historial.</p>';
+      pie = '<p class="vacio">Publicada. Si no ves el cambio, revisá "Cambios publicados".</p>';
     } else {
       pie = progresoHTML(p);
     }
     return '<section class="propuesta' + (cerrada ? ' propuesta--cerrada' : '') + '" data-propuesta="' + i + '" aria-label="Propuesta de cambios">' +
       '<div class="propuesta__cab"><small>Propuesta de cambios</small><h3>' + esc(p.titulo) + '</h3></div>' +
-      '<ul class="propuesta__filas">' + p.filas.filter(function (f) { return !f.oculto; }).map(filaHTML).join('') + '</ul>' +
+      '<ul class="propuesta__filas">' + p.filas.filter(function (f) { return !f.oculto; }).map(function (f) { return filaHTML(c, f); }).join('') + '</ul>' +
       (p.avisos && p.avisos.length ? '<ul class="propuesta__avisos">' + p.avisos.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul>' : '') +
       '<div class="propuesta__pie">' + pie + '</div>' +
       '</section>';
@@ -247,9 +444,9 @@
       '<button type="button" class="boton boton--linea" data-copiar="' + esc(texto) + '">Copiar</button></div></div>';
   }
 
-  function mensajeHTML(m, i) {
+  function mensajeHTML(c, m, i) {
     if (m.rol === 'usuario') {
-      return '<li class="msg msg--usuario"><div class="msg__burbuja">' + fotosHTML(m.fotos) +
+      return '<li class="msg msg--usuario"><div class="msg__burbuja">' + fotosHTML(c, m) +
         (m.texto ? '<p class="msg__texto">' + esc(m.texto) + '</p>' : '') + '</div></li>';
     }
     if (m.tipo === 'sistema') return '<li class="msg msg--sistema"><p class="msg__texto">' + esc(m.texto) + '</p></li>';
@@ -260,62 +457,75 @@
       '<img class="msg__avatar" src="/img/logo/emblema-128.webp" alt="">' +
       '<div class="msg__cuerpo">' +
       (m.texto ? '<p class="msg__texto">' + esc(m.texto) + '</p>' : '') +
-      (m.propuesta ? propuestaHTML(m.propuesta, i) : '') +
+      (m.propuesta ? propuestaHTML(c, m.propuesta, i) : '') +
       (m.pedido ? pedidoHTML(m.pedido) : '') +
       '</div></li>';
   }
 
   function pintar() {
-    var html = estado.mensajes.length ? '' : bienvenidaHTML();
-    html += estado.mensajes.map(mensajeHTML).join('');
+    var c = chatActivo();
+    $('[data-titulo-chat]').textContent = c && c.mensajes.length ? c.titulo : 'Nuevo chat';
+    var html = !c || !c.mensajes.length ? bienvenidaHTML() : '';
+    if (c) html += c.mensajes.map(function (m, i) { return mensajeHTML(c, m, i); }).join('');
     lista.innerHTML = html;
+    actualizarBoton();
     bajar();
   }
 
-  function pintarPropuesta(i) {
+  function pintarPropuesta(c, i) {
+    if (c.id !== estado.activo) return;
     var nodo = $('[data-propuesta="' + i + '"]');
-    var m = estado.mensajes[i];
+    var m = c.mensajes[i];
     if (!nodo || !m || !m.propuesta) return pintar();
     var tmp = document.createElement('div');
-    tmp.innerHTML = propuestaHTML(m.propuesta, i);
+    tmp.innerHTML = propuestaHTML(c, m.propuesta, i);
     nodo.replaceWith(tmp.firstChild);
   }
 
-  function propuestaPendiente() {
-    for (var i = estado.mensajes.length - 1; i >= 0; i--) {
-      var p = estado.mensajes[i].propuesta;
+  function propuestaPendiente(c) {
+    for (var i = c.mensajes.length - 1; i >= 0; i--) {
+      var p = c.mensajes[i].propuesta;
       if (p && p.estado === 'pendiente') return { i: i, p: p };
     }
     return null;
   }
 
+  function tocar(c) { c.actualizado = Date.now(); }
+
   // ---------- enviar un pedido a la IA ----------
   function enviar(texto) {
     texto = (texto || '').trim();
-    if (estado.ocupado || (!texto && !estado.previas.length)) return;
-    if (estado.previas.some(function (id) { return !estado.fotos[id] || !estado.fotos[id].full; })) return; // fotos todavía procesándose
+    var c = chatActivo();
+    if (!c || estado.ocupado || (!texto && !estado.previas.length)) return;
+    var mapaFotos = fotosDe(c);
+    if (estado.previas.some(function (id) { return !mapaFotos[id] || !mapaFotos[id].full; })) return; // fotos todavía procesándose
 
     var nuevas = estado.previas.slice();
     estado.previas = [];
     pintarPrevias();
-    estado.mensajes.push({ rol: 'usuario', texto: texto || (nuevas.length > 1 ? 'Te mando estas fotos.' : 'Te mando esta foto.'), fotos: nuevas });
-    estado.mensajes.push({ rol: 'asistente', tipo: 'pensando' });
-    estado.ocupado = true;
-    actualizarBoton();
+    var minis = {};
+    nuevas.forEach(function (id) { if (mapaFotos[id].mini) minis[id] = mapaFotos[id].mini; });
+    var textoFinal = texto || (nuevas.length > 1 ? 'Te mando estas fotos.' : 'Te mando esta foto.');
+    if (!c.mensajes.length) c.titulo = titular(texto || 'Fotos para el sitio');
+    c.mensajes.push({ rol: 'usuario', texto: textoFinal, fotos: nuevas, minis: minis });
+    c.mensajes.push({ rol: 'asistente', tipo: 'pensando' });
+    tocar(c);
+    estado.ocupado = c.id;
+    guardar();
     pintar();
+    pintarChats();
 
-    var pend = propuestaPendiente();
-    var historial = estado.mensajes
+    var pend = propuestaPendiente(c);
+    var historial = c.mensajes
       .filter(function (m) { return (m.rol === 'usuario' || m.rol === 'asistente') && m.tipo !== 'pensando' && m.tipo !== 'error'; })
       .map(function (m) {
         var t = m.texto || '';
         if (m.rol === 'usuario' && m.fotos && m.fotos.length) t += '\n[Adjunté: ' + m.fotos.join(', ') + ']';
         if (m.propuesta) t += '\n[Propuesta: ' + m.propuesta.titulo + ' — ' + ({ pendiente: 'pendiente de publicar', descartada: 'descartada', reemplazada: 'reemplazada', listo: 'publicada', enviada: 'publicada', actualizando: 'publicada', publicando: 'publicándose', demora: 'publicada', error: 'falló al publicar' }[m.propuesta.estado] || '') + ']';
-        if (m.tipo === 'sistema') return { rol: 'asistente', texto: t };
-        return { rol: m.rol, texto: t };
+        return { rol: m.tipo === 'sistema' ? 'asistente' : m.rol, texto: t };
       });
-    var fotos = Object.keys(estado.fotos).filter(function (id) { return estado.fotos[id].full; }).map(function (id) {
-      var f = estado.fotos[id];
+    var fotos = Object.keys(mapaFotos).filter(function (id) { return mapaFotos[id].full; }).map(function (id) {
+      var f = mapaFotos[id];
       return { id: id, mime: f.thumb.mime, datos: nuevas.indexOf(id) >= 0 ? f.thumb.datos : '' };
     });
 
@@ -324,7 +534,7 @@
       datos: { mensajes: historial, fotos: fotos, pendiente: pend ? { titulo: pend.p.titulo, cambios: pend.p.cambios } : null },
     })
       .then(function (r) {
-        estado.mensajes.pop();
+        sacarPensando(c);
         if (r.propuesta && pend) pend.p.estado = 'reemplazada';
         var m = { rol: 'asistente', texto: r.respuesta || '' };
         if (r.propuesta) {
@@ -332,18 +542,24 @@
           m.propuesta.estado = 'pendiente';
         }
         if (r.pedido) m.pedido = r.pedido;
-        estado.mensajes.push(m);
+        c.mensajes.push(m);
       })
       .catch(function (err) {
-        estado.mensajes.pop();
-        estado.mensajes.push({ rol: 'asistente', tipo: 'error', texto: err.message });
+        sacarPensando(c);
+        c.mensajes.push({ rol: 'asistente', tipo: 'error', texto: err.message });
       })
       .then(function () {
-        estado.ocupado = false;
-        actualizarBoton();
+        estado.ocupado = null;
+        tocar(c);
         guardar();
-        pintar();
+        if (c.id === estado.activo) pintar();
+        else actualizarBoton();
+        pintarChats();
       });
+  }
+
+  function sacarPensando(c) {
+    c.mensajes = c.mensajes.filter(function (m) { return m.tipo !== 'pensando'; });
   }
 
   // ---------- publicar ----------
@@ -357,53 +573,53 @@
     return out;
   }
 
-  function publicar(i) {
-    var m = estado.mensajes[i];
+  function publicar(c, i) {
+    var m = c.mensajes[i];
     var p = m && m.propuesta;
     if (!p) return;
     var refs = [];
-    p.cambios.forEach(function (c) {
-      try { referencias(JSON.parse(c.valor_json || 'null'), refs); } catch (e) { referencias(c.valor_json, refs); }
+    p.cambios.forEach(function (x) {
+      try { referencias(JSON.parse(x.valor_json || 'null'), refs); } catch (e) { referencias(x.valor_json, refs); }
     });
+    var mapaFotos = fotosDe(c);
     var fotos = {};
     var faltante = null;
     var peso = 0;
     refs.forEach(function (id) {
-      var f = estado.fotos[id];
+      var f = mapaFotos[id];
       if (!f || !f.full) { faltante = id; return; }
       fotos[id] = f.full;
       peso += f.full.datos.length;
     });
     if (faltante) {
       p.estado = 'error';
-      p.error = 'La foto ' + faltante + ' ya no está (se recargó la página). Adjuntala de nuevo y pedile el cambio otra vez.';
-      return pintarPropuesta(i);
+      p.error = 'La foto ' + faltante + ' ya no está (se cerró o recargó la página). Adjuntala de nuevo y pedile el cambio otra vez.';
+      return pintarPropuesta(c, i);
     }
     if (peso > 3.9e6) {
       p.estado = 'error';
       p.error = 'Las fotos son muy pesadas para publicarlas juntas. Probá de a una.';
-      return pintarPropuesta(i);
+      return pintarPropuesta(c, i);
     }
     p.estado = 'publicando';
-    pintarPropuesta(i);
+    pintarPropuesta(c, i);
     api('publicar', { metodo: 'POST', datos: { titulo: p.titulo, cambios: p.cambios, fotos: fotos } })
       .then(function (r) {
         if (r.sinCambios) {
           p.estado = 'listo';
-          pintarPropuesta(i);
+          pintarPropuesta(c, i);
           return;
         }
         p.estado = 'actualizando';
         p.commit = r.commit;
+        tocar(c);
         guardar();
-        pintarPropuesta(i);
+        pintarPropuesta(c, i);
         esperarSitio(r.contenido, function (ok) {
           p.estado = ok ? 'listo' : 'demora';
-          if (ok) {
-            estado.mensajes.push({ rol: 'asistente', tipo: 'sistema', texto: 'Publicado: ' + p.titulo });
-          }
+          if (ok) c.mensajes.push({ rol: 'asistente', tipo: 'sistema', texto: 'Publicado: ' + p.titulo });
           guardar();
-          pintar();
+          if (c.id === estado.activo) pintar();
           cargarHoy();
           cargarHistorial();
         });
@@ -411,7 +627,7 @@
       .catch(function (err) {
         p.estado = 'error';
         p.error = err.message;
-        pintarPropuesta(i);
+        pintarPropuesta(c, i);
       });
   }
 
@@ -435,20 +651,20 @@
     var t = e.target;
     var ej = t.closest('[data-ejemplo]');
     if (ej) {
-      var area = $('[data-texto]');
       area.value = ej.textContent;
       ajustar();
       actualizarBoton();
       area.focus();
       return;
     }
+    var c = chatActivo();
     var caja = t.closest('[data-propuesta]');
-    if (caja && t.closest('[data-publicar]')) return publicar(Number(caja.getAttribute('data-propuesta')));
-    if (caja && t.closest('[data-descartar]')) {
+    if (c && caja && t.closest('[data-publicar]')) return publicar(c, Number(caja.getAttribute('data-propuesta')));
+    if (c && caja && t.closest('[data-descartar]')) {
       var i = Number(caja.getAttribute('data-propuesta'));
-      estado.mensajes[i].propuesta.estado = 'descartada';
+      c.mensajes[i].propuesta.estado = 'descartada';
       guardar();
-      return pintarPropuesta(i);
+      return pintarPropuesta(c, i);
     }
     var copiar = t.closest('[data-copiar]');
     if (copiar && navigator.clipboard) {
@@ -460,16 +676,12 @@
   });
 
   // ---------- redactor ----------
-  var form = $('[data-redactor]');
-  var area = $('[data-texto]');
-  var botonEnviar = $('[data-enviar]');
-
   function ajustar() {
     area.style.height = 'auto';
     area.style.height = Math.min(area.scrollHeight, window.innerHeight * 0.4) + 'px';
   }
   function actualizarBoton() {
-    botonEnviar.disabled = estado.ocupado || (!area.value.trim() && !estado.previas.length);
+    botonEnviar.disabled = !!estado.ocupado || (!area.value.trim() && !estado.previas.length);
   }
   area.addEventListener('input', function () { ajustar(); actualizarBoton(); });
   area.addEventListener('keydown', function (e) {
@@ -480,8 +692,8 @@
   });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var texto = area.value;
     if (estado.ocupado) return;
+    var texto = area.value;
     area.value = '';
     ajustar();
     enviar(texto);
@@ -521,25 +733,34 @@
   }
 
   function procesar(archivo) {
-    var id = 'foto:' + estado.sigFoto++;
+    var c = chatActivo();
+    if (!c) return;
+    var mapaFotos = fotosDe(c);
+    var id = 'foto:' + (c.sigFoto || 1);
+    c.sigFoto = (c.sigFoto || 1) + 1;
     var url = URL.createObjectURL(archivo);
-    estado.fotos[id] = { url: url };
+    mapaFotos[id] = { url: url };
     estado.previas.push(id);
     pintarPrevias();
     return cargarImagen(url)
       .then(function (img) {
-        return Promise.all([redimensionar(img, 1600, 'image/webp', 0.84), redimensionar(img, 768, 'image/jpeg', 0.72)]);
+        return Promise.all([
+          redimensionar(img, 1600, 'image/webp', 0.84),
+          redimensionar(img, 768, 'image/jpeg', 0.72),
+          redimensionar(img, 180, 'image/jpeg', 0.6),
+        ]);
       })
       .then(function (res) {
-        return Promise.all([aBase64(res[0].blob), aBase64(res[1].blob)]).then(function (b64) {
-          estado.fotos[id].full = { datos: b64[0], mime: res[0].blob.type, ancho: res[0].ancho, alto: res[0].alto };
-          estado.fotos[id].thumb = { datos: b64[1], mime: res[1].blob.type };
+        return Promise.all([aBase64(res[0].blob), aBase64(res[1].blob), aBase64(res[2].blob)]).then(function (b64) {
+          mapaFotos[id].full = { datos: b64[0], mime: res[0].blob.type, ancho: res[0].ancho, alto: res[0].alto };
+          mapaFotos[id].thumb = { datos: b64[1], mime: res[1].blob.type };
+          mapaFotos[id].mini = 'data:' + res[2].blob.type + ';base64,' + b64[2];
         });
       })
       .catch(function (err) {
-        delete estado.fotos[id];
+        delete mapaFotos[id];
         estado.previas = estado.previas.filter(function (x) { return x !== id; });
-        estado.mensajes.push({ rol: 'asistente', tipo: 'error', texto: err.message });
+        c.mensajes.push({ rol: 'asistente', tipo: 'error', texto: err.message });
         pintar();
       })
       .then(function () {
@@ -550,10 +771,12 @@
 
   function pintarPrevias() {
     var ul = $('[data-previas]');
+    var c = chatActivo();
+    var mapaFotos = c ? fotosDe(c) : {};
     ul.hidden = !estado.previas.length;
     ul.innerHTML = estado.previas.map(function (id) {
-      var f = estado.fotos[id];
-      return '<li class="' + (f && f.full ? '' : 'procesando') + '"><img src="' + (f ? f.url : '') + '" alt="Foto para enviar">' +
+      var f = mapaFotos[id];
+      return '<li class="' + (f && f.full ? '' : 'procesando') + '"><img src="' + (f ? esc(f.url) : '') + '" alt="Foto para enviar">' +
         '<button type="button" data-quitar-foto="' + id + '" aria-label="Quitar foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></li>';
     }).join('');
   }
@@ -563,7 +786,8 @@
     var lugar = Math.max(0, 4 - estado.previas.length);
     archivos.slice(0, lugar).forEach(procesar);
     if (archivos.length > lugar) {
-      estado.mensajes.push({ rol: 'asistente', tipo: 'sistema', texto: 'Podés mandar hasta 4 fotos por mensaje.' });
+      var c = chatActivo();
+      if (c) c.mensajes.push({ rol: 'asistente', tipo: 'sistema', texto: 'Podés mandar hasta 4 fotos por mensaje.' });
       pintar();
     }
     e.target.value = '';
@@ -605,7 +829,7 @@
       });
   }
 
-  // ---------- historial ----------
+  // ---------- cambios publicados ----------
   var historialDatos = [];
   function cargarHistorial() {
     var ol = $('[data-historial]');
@@ -648,16 +872,22 @@
     var si = t.closest('[data-deshacer-si]');
     if (!si) return;
     var sha = si.getAttribute('data-deshacer-si');
+    var c = chatActivo();
     pintarHistorial(null, { sha: sha, texto: 'Deshaciendo…' });
     api('deshacer', { metodo: 'POST', datos: { sha: sha } })
       .then(function (r) {
         pintarHistorial(null, { sha: sha, texto: 'Actualizando tu sitio (tarda 1 o 2 minutos)…' });
-        estado.mensajes.push({ rol: 'asistente', tipo: 'sistema', texto: 'Deshaciendo el último cambio…' });
-        pintar();
-        esperarSitio(r.contenido, function (ok) {
-          estado.mensajes.push({ rol: 'asistente', tipo: 'sistema', texto: ok ? 'Listo: el último cambio se deshizo.' : 'El cambio se deshizo y el sitio se está actualizando.' });
+        if (c) {
+          c.mensajes.push({ rol: 'asistente', tipo: 'sistema', texto: 'Deshaciendo el último cambio…' });
+          tocar(c);
           guardar();
           pintar();
+          pintarChats();
+        }
+        esperarSitio(r.contenido, function (ok) {
+          if (c) c.mensajes.push({ rol: 'asistente', tipo: 'sistema', texto: ok ? 'Listo: el último cambio se deshizo.' : 'El cambio se deshizo y el sitio se está actualizando.' });
+          guardar();
+          if (c && c.id === estado.activo) pintar();
           cargarHoy();
           cargarHistorial();
         });
@@ -667,7 +897,7 @@
       });
   });
 
-  // ---------- lateral en el celular ----------
+  // ---------- paneles laterales en pantallas chicas ----------
   var lateral = $('[data-lateral]');
   $$('[data-abrir]').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -679,7 +909,13 @@
     if (e.target.closest('[data-cerrar-lateral]')) lateral.removeAttribute('data-abierto');
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') lateral.removeAttribute('data-abierto');
+    if (e.key !== 'Escape') return;
+    lateral.removeAttribute('data-abierto');
+    cerrarChats();
+    if (estado.confirmarBorrado) {
+      estado.confirmarBorrado = null;
+      pintarChats();
+    }
   });
 
   // ---------- inicio ----------

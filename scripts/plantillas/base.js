@@ -287,9 +287,7 @@ function migas(id) {
 
 // ---------- pie ----------
 function pie() {
-  const firma = S.creditos.url
-    ? `<a href="${S.creditos.url}" target="_blank" rel="noopener">${S.creditos.texto}</a>`
-    : S.creditos.texto;
+  const firma = require('./nexora').firmaNexora({ clase: 'nx-firma' });
   return `<footer class="pie">
   <div class="contenedor pie__in">
     <div class="pie__marca">
@@ -327,7 +325,7 @@ function pie() {
   </div>
   <div class="contenedor pie__base">
     <p>© ${AÑO} ${esc(N.nombre)}. La información de este sitio es orientativa y no reemplaza la consulta profesional.</p>
-    <p class="pie__firma"><!-- firma-nexora -->${firma}</p>
+    <p class="pie__firma"><!-- firma-nexora -->${firma}<!-- /firma-nexora --></p>
   </div>
 </footer>
 <a class="wa-flotante" href="${wa()}" target="_blank" rel="noopener" aria-label="Pedir turno por WhatsApp" data-wa-flotante>${UI.whatsapp}<span>Pedir turno</span></a>`;

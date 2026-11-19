@@ -841,6 +841,17 @@ html:has(.con-aviso) { scroll-padding-top: calc(96px + var(--aviso-h, 42px)); }
   font-size: 0.85rem; color: #9aa78e;
 }
 .pie__base p { margin: 0; max-width: 72ch; }
+/* firma de la agencia */
+.pie .nx-firma {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 6px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #c9d2bf; font-size: 0.85rem; text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+.pie .nx-firma:hover { color: #fff; border-color: rgba(255, 255, 255, 0.3); text-decoration: none; }
+.pie .nx-firma b { font-weight: 700; color: #fff; }
+.nx-logo { display: block; flex: none; }
 
 /* ---------- WhatsApp flotante ---------- */
 .wa-flotante {

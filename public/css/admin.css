@@ -86,7 +86,7 @@ a { color: var(--salvia-700); }
 .icono-boton svg { width: 20px; height: 20px; }
 
 /* ---------- ingreso ---------- */
-.ingreso { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+.ingreso { position: relative; min-height: 100dvh; display: grid; place-items: center; padding: 24px 24px 80px; }
 .ingreso__caja {
   width: min(100%, 380px);
   display: flex; flex-direction: column; gap: 10px;
@@ -119,21 +119,25 @@ a { color: var(--salvia-700); }
 }
 .barra {
   grid-area: barra;
-  display: flex; align-items: center; gap: 12px;
-  padding: max(10px, env(safe-area-inset-top)) clamp(14px, 3vw, 28px) 10px;
+  display: flex; align-items: center; gap: 8px;
+  min-width: 0;
+  padding: max(10px, env(safe-area-inset-top)) clamp(10px, 3vw, 24px) 10px;
   border-bottom: 1px solid var(--linea);
   background: rgba(247, 248, 244, 0.92);
 }
-.barra__marca { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--bosque); min-width: 0; }
-.barra__marca span { display: flex; flex-direction: column; line-height: 1.15; }
-.barra__marca strong { font-family: var(--f-display); font-weight: 400; font-size: 1.25rem; }
-.barra__marca small { color: var(--texto-2); font-size: 0.8rem; }
-.barra__acciones { margin-left: auto; display: flex; gap: 2px; }
+.barra__titulo {
+  margin: 0; min-width: 0; flex: 1;
+  font-family: var(--f-display); font-size: 1.15rem; color: var(--bosque);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.barra__acciones { margin-left: auto; display: flex; gap: 2px; flex: none; }
 .barra__boton {
   border: 0; background: none; min-height: 40px; padding: 0 12px; border-radius: 999px;
-  color: var(--texto-2); font-weight: 500; font-size: 0.93rem;
+  display: inline-flex; align-items: center;
+  color: var(--texto-2); font-weight: 500; font-size: 0.93rem; text-decoration: none;
 }
 .barra__boton:hover { background: var(--salvia-50); color: var(--bosque); }
+.barra__menu svg { width: 22px; height: 22px; }
 
 .app__cuerpo { grid-area: cuerpo; min-height: 0; display: grid; }
 .chat { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
@@ -143,15 +147,106 @@ a { color: var(--salvia-700); }
   display: flex; flex-direction: column; gap: 18px;
 }
 
+/* lista de chats a la izquierda (desde 1000 px) */
 @media (min-width: 1000px) {
   .app {
-    grid-template-columns: minmax(0, 1fr) var(--lateral);
-    grid-template-areas: 'barra barra' 'cuerpo lateral' 'redactor lateral';
+    grid-template-columns: 272px minmax(0, 1fr);
+    grid-template-areas: 'chats barra' 'chats cuerpo' 'chats redactor';
+  }
+  .chats { grid-area: chats; }
+  .barra__menu, .chats__cerrar { display: none !important; }
+}
+/* datos y cambios a la derecha (desde 1280 px) */
+@media (min-width: 1280px) {
+  .app {
+    grid-template-columns: 272px minmax(0, 1fr) var(--lateral);
+    grid-template-areas: 'chats barra barra' 'chats cuerpo lateral' 'chats redactor lateral';
   }
   .app__cuerpo { display: contents; }
   .chat { grid-area: cuerpo; }
-  .barra__boton--movil { display: none; }
+  .barra__boton--lateral { display: none; }
 }
+@media (max-width: 600px) {
+  .barra__boton--sitio { display: none; }
+  .barra__boton { padding: 0 9px; }
+}
+
+/* ---------- chats (historial de conversaciones) ---------- */
+.chats__hoja {
+  height: 100%;
+  display: flex; flex-direction: column;
+  background: var(--salvia-50);
+  border-right: 1px solid var(--linea);
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+}
+.chats__fondo { display: none; }
+.chats__cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 4px 12px; }
+.chats__marca { display: flex; align-items: center; gap: 10px; color: var(--bosque); text-decoration: none; }
+.chats__marca span { font-family: var(--f-display); font-size: 1.3rem; }
+.chats__nuevo {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--salvia-200); border-radius: 14px; background: var(--papel);
+  color: var(--bosque); font-weight: 600; font-size: 0.95rem; text-align: left;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.chats__nuevo:hover { border-color: var(--salvia-600); }
+.chats__nuevo svg { width: 19px; height: 19px; flex: none; }
+.chats__lista { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; margin: 14px 0 0; }
+.chats__grupo { margin: 0 0 14px; }
+.chats__grupo-t { margin: 0 0 4px; padding: 0 10px; font-size: 0.78rem; font-weight: 600; color: var(--texto-2); }
+.chats__grupo ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; }
+.chat-item { position: relative; display: flex; align-items: center; min-width: 0; border-radius: 10px; }
+.chat-item:hover, .chat-item:focus-within { background: var(--salvia-100); }
+.chat-item[aria-current='true'] { background: var(--salvia-200); }
+.chat-item__abrir {
+  flex: 1; min-width: 0; border: 0; background: none; text-align: left;
+  padding: 9px 4px 9px 10px; font-size: 0.92rem; color: var(--bosque);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chat-item__borrar {
+  flex: none; width: 34px; height: 34px; margin-right: 2px;
+  display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--texto-2);
+  opacity: 0; transition: opacity 0.15s, background-color 0.15s, color 0.15s;
+}
+.chat-item:hover .chat-item__borrar, .chat-item:focus-within .chat-item__borrar, .chat-item[aria-current='true'] .chat-item__borrar { opacity: 1; }
+.chat-item__borrar:hover { background: var(--magnolia-100); color: var(--magnolia-800); }
+.chat-item__borrar svg { width: 17px; height: 17px; }
+@media (hover: none) { .chat-item__borrar { opacity: 1; } }
+.chat-item--confirmar { display: grid; gap: 8px; padding: 10px; background: var(--magnolia-100) !important; }
+.chat-item--confirmar p { margin: 0; font-size: 0.88rem; color: var(--magnolia-800); }
+.chat-item--confirmar div { display: flex; gap: 6px; }
+.chat-item--confirmar .boton { min-height: 34px; padding: 0 14px; font-size: 0.86rem; }
+.boton--peligro { background: var(--magnolia-800); color: #fff; }
+.boton--peligro:hover { background: #723f2c; }
+.chats__vacio { margin: 8px 10px; font-size: 0.88rem; color: var(--texto-2); }
+.chats__pie { padding: 12px 4px 0; border-top: 1px solid var(--linea); margin-top: 8px; }
+
+@media (max-width: 999px) {
+  .chats { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+  .chats__fondo { display: block; position: absolute; inset: 0; background: rgba(36, 48, 32, 0.32); opacity: 0; transition: opacity 0.25s; }
+  .chats__hoja {
+    position: absolute; inset: 0 auto 0 0; width: min(86vw, 320px);
+    transform: translateX(-100%); transition: transform 0.3s var(--ease);
+    box-shadow: 0 0 40px -10px rgba(36, 48, 32, 0.35);
+  }
+  .chats[data-abierto] { pointer-events: auto; }
+  .chats[data-abierto] .chats__fondo { opacity: 1; }
+  .chats[data-abierto] .chats__hoja { transform: none; }
+}
+
+/* ---------- firma NexoraSaaS ---------- */
+.nx-firma {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 6px; border-radius: 999px;
+  color: var(--texto-2); font-size: 0.84rem; text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+.nx-firma:hover { background: var(--salvia-100); color: var(--bosque); }
+.nx-firma b { color: var(--bosque); font-weight: 700; }
+.nx-logo { display: block; flex: none; }
+.ingreso__firma { position: absolute; left: 0; right: 0; bottom: max(18px, env(safe-area-inset-bottom)); text-align: center; }
+.bienvenida__firma { margin-top: 18px; }
 
 /* ---------- mensajes ---------- */
 .msg { display: flex; gap: 10px; align-items: flex-start; max-width: 100%; }
@@ -323,7 +418,7 @@ a { color: var(--salvia-700); }
 .historial__acciones p { margin: 0; font-size: 0.88rem; color: var(--magnolia-800); width: 100%; }
 .vacio { margin: 0; color: var(--texto-2); font-size: 0.92rem; }
 
-@media (max-width: 999px) {
+@media (max-width: 1279px) {
   .lateral { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
   .lateral__fondo { display: block; position: absolute; inset: 0; background: rgba(36, 48, 32, 0.32); opacity: 0; transition: opacity 0.25s; }
   .lateral__hoja {
@@ -341,8 +436,6 @@ a { color: var(--salvia-700); }
 }
 
 @media (max-width: 520px) {
-  .barra__marca small { display: none; }
-  .barra__boton { padding: 0 10px; }
   .msg--asistente .msg__avatar { display: none; }
 }
 

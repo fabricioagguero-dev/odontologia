@@ -31,7 +31,7 @@ module.exports = {
     locale: 'es_AR',
     colorTema: '#F7F8F4',
     colorMarca: '#7E8B6C',
-    creditos: { texto: 'Sitio web por Nexora', url: '' },
+    creditos: { texto: 'Desarrollado por NexoraSaaS', url: 'https://nexorasaas.com/' },
   },
 
   negocio: {
